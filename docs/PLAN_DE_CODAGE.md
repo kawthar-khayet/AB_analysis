@@ -116,7 +116,7 @@ Génère une expérience binaire (taux A, taux B, n par groupe) ou continue (moy
 
 **Fait quand :** deux appels avec la même graine produisent des tableaux strictement identiques ; deux graines différentes produisent des tableaux différents.
 
-## Étape 4 — `diagnostics.py`
+## Étape 4 — `diagnostics.py` ✅
 
 **Fichier :** `packages/ab_stats/diagnostics.py` · **Test :** `tests/test_diagnostics.py`
 

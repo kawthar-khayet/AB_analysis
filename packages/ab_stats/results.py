@@ -149,6 +149,7 @@ class CIMethod(str, Enum):
 
     NORMAL_APPROX_UNPOOLED = "normal_approx_unpooled"
     NEWCOMBE = "newcombe"
+    WALD = "wald"
     STUDENT_T_DIST = "student_t_dist"
     WELCH_T_DIST = "welch_t_dist"
     HODGES_LEHMANN = "hodges_lehmann"
