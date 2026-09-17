@@ -77,11 +77,15 @@ EFFECT_DIRECTION = "B_minus_A"
 
 
 class MetricType(str, Enum):
-    """Nature de la métrique analysée."""
+    """Nature de la métrique analysée.
+
+    Deux types seulement : le projet ne traite pas les métriques ordinales.
+    Mann-Whitney reste au catalogue, appliqué aux métriques continues à
+    distribution difficile (forte asymétrie, valeurs extrêmes).
+    """
 
     BINARY = "binary"
     CONTINUOUS = "continuous"
-    ORDINAL = "ordinal"
 
 
 class Method(str, Enum):

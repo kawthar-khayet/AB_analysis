@@ -20,7 +20,8 @@ Document de travail. Chaque étape est une unité de code autonome, terminée pa
 | Fichier | Rôle |
 |---|---|
 | `results.py` | Le contrat `StatisticalResult` et ses sous-objets. Aucune logique de calcul. |
-| `data.py` | Normalisation et validation d'un jeu de données ; produit le rapport d'exclusions. |
+| `data.py` | Profilage des colonnes, déclarations de l'analyste, validation et normalisation ; produit le rapport d'exclusions. |
+| `exceptions.py` | Erreurs structurées : code stable, catégorie, message, détails sérialisables. |
 | `simulation.py` | Génération déterministe de données A/B (binaires et continues) à partir d'une graine. |
 | `diagnostics.py` | Effectifs, valeurs manquantes, statistiques descriptives, asymétrie, valeurs extrêmes. |
 | `effect_sizes.py` | `cohens_d`, `hedges_g`, `cohens_h`, `cliffs_delta`. |
@@ -81,7 +82,7 @@ Document de travail. Chaque étape est une unité de code autonome, terminée pa
 
 > Objectif de la phase : obtenir un résultat statistique complet et vérifié, **sans serveur ni interface**.
 
-## Étape 1 — `results.py` : le contrat
+## Étape 1 — `results.py` : le contrat ✅
 
 **Fichier :** `packages/ab_stats/results.py`
 **Test :** `tests/test_results.py`
@@ -97,7 +98,7 @@ Les dataclasses `frozen=True` : `StatisticalResult`, `Hypotheses`, `GroupSummary
 
 **Pourquoi en premier :** tout le reste retourne cet objet. Le définir après les méthodes obligerait à tout réécrire.
 
-## Étape 2 — `data.py` : validation et normalisation
+## Étape 2 — `data.py` : validation et normalisation ✅
 
 **Fichier :** `packages/ab_stats/data.py` · **Test :** `tests/test_data.py`
 
@@ -107,7 +108,7 @@ Prend deux colonnes brutes (`group`, `metric`), applique le mapping (valeur A, v
 
 **Règle :** ne jamais corriger silencieusement. Toute ligne écartée apparaît dans le rapport.
 
-## Étape 3 — `simulation.py` : données déterministes
+## Étape 3 — `simulation.py` : données déterministes ✅
 
 **Fichier :** `packages/ab_stats/simulation.py` · **Test :** `tests/test_simulation.py`
 

@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/ab_stats/tests",
+]
+pythonpath = [
+    "packages",
+]
+addopts = [
+    "-q",
+    "--strict-markers",
+]

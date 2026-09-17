@@ -753,7 +753,7 @@ Même test, sans l'hypothèse d'égalité des variances (degrés de liberté aju
 Jette les valeurs et ne garde que **l'ordre** : classe toutes les observations des deux groupes confondus et compare les rangs.
 
 - **Hypothèses** : indépendance, métrique au moins ordinale. Pas de normalité.
-- **Quand** : distributions très asymétriques, valeurs extrêmes, données ordinales (notes 1–5), petits échantillons non normaux.
+- **Quand** : distributions très asymétriques, valeurs extrêmes, petits échantillons non normaux.
 - **⚠️ Subtilité majeure** : Mann-Whitney **ne compare ni les moyennes ni les médianes**. Il teste :
 
   > « si je tire un utilisateur au hasard dans B et un dans A, la probabilité que celui de B ait la plus grande valeur diffère-t-elle de 50 % ? »
@@ -796,7 +796,7 @@ Ce ne sont pas deux versions du même outil, mais les deux moitiés de la page R
 | `fisher_exact` | binaire | indépendance | petits effectifs, événements rares | diff. de taux (IC à documenter) |
 | `student_t` | continue | normalité + **variances égales** | référence pédagogique | diff. de moyennes |
 | `welch_t` | continue | normalité (ou grand `n`) | **défaut recommandé** | diff. de moyennes |
-| `mann_whitney_u` | continue / ordinale | indépendance ; même forme si lecture en médianes | asymétrie forte, valeurs extrêmes | Hodges–Lehmann |
+| `mann_whitney_u` | continue | indépendance ; même forme si lecture en médianes | asymétrie forte, valeurs extrêmes | Hodges–Lehmann |
 | `permutation` | continue | échangeabilité sous H₀ ; **graine** | peu d'hypothèses, p-value transparente | diff. de moyennes |
 | `bootstrap` | continue | échantillon représentatif, `n` pas trop petit ; **graine** | IC sans hypothèse de forme | diff. de moyennes |
 
