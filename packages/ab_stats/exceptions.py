@@ -25,6 +25,7 @@ __all__ = [
     "InsufficientSampleError",
     "InvalidParameterError",
     "InternalConsistencyError",
+    "DegenerateSampleError",
 ]
 
 
@@ -94,3 +95,12 @@ class InternalConsistencyError(ABStatsError):
     """
 
     category = "INTERNAL_CONSISTENCY_ERROR"
+
+
+class DegenerateSampleError(ABStatsError):
+    """Échantillon dégénéré rendant le calcul de la statistique mathématiquement impossible.
+
+    Exemple : variance nulle, zéro événement dans les deux groupes...
+    """
+
+    category = "DEGENERATE_SAMPLE_ERROR"

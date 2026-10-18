@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Union
 
 import numpy as np
 from scipy import stats
@@ -44,21 +43,21 @@ from ab_stats.results import (
 )
 
 __all__ = [
+    "BALANCE_THRESHOLD",
     "DEFAULT_CONFIDENCE_LEVEL",
     "DEFAULT_OUTLIER_IQR_MULTIPLIER",
-    "OUTLIER_RATE_THRESHOLD",
-    "MIN_EVENT_COUNT",
-    "SMALL_SAMPLE_THRESHOLD",
     "HIGH_SKEWNESS_THRESHOLD",
+    "MIN_EVENT_COUNT",
+    "OUTLIER_RATE_THRESHOLD",
+    "SMALL_SAMPLE_THRESHOLD",
     "VARIANCE_RATIO_THRESHOLD",
-    "BALANCE_THRESHOLD",
-    "BinaryGroupDiagnostics",
-    "ContinuousGroupDiagnostics",
-    "GroupDiagnostics",
-    "BinaryComparison",
-    "ContinuousComparison",
     "Balance",
+    "BinaryComparison",
+    "BinaryGroupDiagnostics",
+    "ContinuousComparison",
+    "ContinuousGroupDiagnostics",
     "Diagnostics",
+    "GroupDiagnostics",
     "diagnose",
 ]
 
@@ -151,7 +150,7 @@ class ContinuousGroupDiagnostics:
         return self.n_outliers / self.n
 
 
-GroupDiagnostics = Union[BinaryGroupDiagnostics, ContinuousGroupDiagnostics]
+GroupDiagnostics = BinaryGroupDiagnostics | ContinuousGroupDiagnostics
 
 
 # ---------------------------------------------------------------------------

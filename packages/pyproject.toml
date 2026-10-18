@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ab_stats"
+version = "0.1.0"
+description = "Noyau statistique de l'A/B Analysis Workspace : analyses fréquentistes traçables."
+requires-python = ">=3.11"
+# Versions minimales, pas exactes : la reproductibilité est assurée par
+# `Reproducibility.library_versions`, qui enregistre les versions réellement
+# utilisées dans chaque résultat.
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    # 0.14.2 est la première version compatible avec numpy 2.
+    "statsmodels>=0.14.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ab_stats*"]
