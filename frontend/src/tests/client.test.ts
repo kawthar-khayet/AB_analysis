@@ -26,7 +26,9 @@ describe("request", () => {
 
     const data = await request<Blob>("/exports/x", { method: "POST" });
 
-    expect(data).toBeInstanceOf(Blob);
+    // Pas de `toBeInstanceOf(Blob)` : selon la version de Node, `fetch` crée un Blob natif
+    // de Node, différent de la classe Blob de jsdom. On vérifie donc la nature de l'objet.
+    expect(Object.prototype.toString.call(data)).toBe("[object Blob]");
     expect(data.size).toBe("contenu".length);
   });
 
