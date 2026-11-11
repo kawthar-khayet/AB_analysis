@@ -1,11 +1,13 @@
 import React from "react";
-import { ConfidenceInterval } from "../types/results";
+import { ConfidenceInterval, FavorableDirection } from "../types/results";
 
 interface Props {
   confidenceInterval: ConfidenceInterval;
   estimate: number;
   delta?: number | null;
   unit: string;
+  /** Si plus bas = mieux, le seuil de gain δ se place du côté négatif (B − A = −δ). */
+  favorableDirection?: FavorableDirection;
 }
 
 export const ConfidenceIntervalPlot: React.FC<Props> = ({
@@ -13,6 +15,7 @@ export const ConfidenceIntervalPlot: React.FC<Props> = ({
   estimate,
   delta,
   unit,
+  favorableDirection = "higher_is_better",
 }) => {
   if (
     confidenceInterval.lower === null ||
@@ -58,10 +61,12 @@ export const ConfidenceIntervalPlot: React.FC<Props> = ({
   const xUpper = scaleX(upper);
   const xEst = scaleX(estimate);
   const xZero = scaleX(0);
-  const xDelta = delta !== null && delta !== undefined ? scaleX(delta) : null;
+  const deltaSign = favorableDirection === "lower_is_better" ? -1 : 1;
+  const xDelta = delta !== null && delta !== undefined ? scaleX(deltaSign * delta) : null;
 
   const excludesZero = lower > 0 || upper < 0;
-  const ciColor = excludesZero ? (lower > 0 ? "#16a34a" : "#dc2626") : "#0284c7";
+  const improves = deltaSign > 0 ? lower > 0 : upper < 0;
+  const ciColor = excludesZero ? (improves ? "#16a34a" : "#dc2626") : "#0284c7";
 
   return (
     <div
@@ -141,7 +146,7 @@ export const ConfidenceIntervalPlot: React.FC<Props> = ({
               fill="#d97706"
               fontWeight="600"
             >
-              δ ({delta})
+              {deltaSign < 0 ? `−δ (−${delta})` : `δ (${delta})`}
             </text>
           </>
         )}

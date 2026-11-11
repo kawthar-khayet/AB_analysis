@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
+from ab_stats.exceptions import InvalidParameterError
 from ab_stats.interpretation import interpret
 from ab_stats.results import (
     Alternative,
@@ -14,6 +17,7 @@ from ab_stats.results import (
     EffectSizeName,
     Estimate,
     EstimateName,
+    FavorableDirection,
     GroupSummary,
     Groups,
     Hypotheses,
@@ -125,3 +129,66 @@ def test_no_equality_statement_in_wording() -> None:
         ).lower()
         for word in forbidden_words:
             assert word not in all_text, f"Le mot interdit '{word}' a été trouvé dans: {all_text}"
+
+
+# ---------------------------------------------------------------------------
+# Sens favorable : « plus bas = mieux » (délai de paiement, taux de défaut…)
+# ---------------------------------------------------------------------------
+
+LOWER = FavorableDirection.LOWER_IS_BETTER
+
+
+def test_default_direction_is_higher_is_better() -> None:
+    interp = interpret(_make_result(2.0, 4.0, 3.0, 0.001), delta=1.0)
+    assert interp.favorable_direction is FavorableDirection.HIGHER_IS_BETTER
+    assert interp.case is InterpretationCase.A
+
+
+def test_faster_payment_is_an_improvement_when_lower_is_better() -> None:
+    # Délai B − A = −2,8 j, IC [−4,0 ; −1,5], seuil 1 jour : B paie nettement plus vite.
+    result = _make_result(-4.0, -1.5, -2.8, 0.0001)
+
+    assert interpret(result, delta=1.0).case is InterpretationCase.E  # lecture naïve (plus haut = mieux)
+    interp = interpret(result, delta=1.0, favorable_direction=LOWER)
+    assert interp.case is InterpretationCase.A
+    assert interp.recommendation == "Déployer la variante B."
+    assert interp.favorable_direction is LOWER
+    assert "plus bas = mieux" in interp.caveats[0]
+
+
+def test_slower_payment_is_a_degradation_when_lower_is_better() -> None:
+    result = _make_result(1.5, 4.0, 2.8, 0.0001)
+    assert interpret(result, delta=1.0, favorable_direction=LOWER).case is InterpretationCase.E
+    # Le cas (e) ne dépend pas de delta.
+    assert interpret(result, favorable_direction=LOWER).case is InterpretationCase.E
+
+
+def test_small_gain_below_delta_is_case_b_when_lower_is_better() -> None:
+    result = _make_result(-0.8, -0.2, -0.5, 0.01)
+    assert interpret(result, delta=1.0, favorable_direction=LOWER).case is InterpretationCase.B
+
+
+@pytest.mark.parametrize(
+    ("lower", "upper", "expected"),
+    [(-0.5, 0.5, InterpretationCase.C), (-3.0, 0.5, InterpretationCase.D), (-0.5, 3.0, InterpretationCase.D)],
+)
+def test_inconclusive_cases_are_symmetric(lower: float, upper: float, expected: InterpretationCase) -> None:
+    result = _make_result(lower, upper, (lower + upper) / 2, 0.4)
+    assert interpret(result, delta=1.0, favorable_direction=LOWER).case is expected
+    assert interpret(result, delta=1.0).case is expected
+
+
+def test_overlap_uses_the_gain_estimate_when_lower_is_better() -> None:
+    # Gain = A − B ∈ [0,5 ; 3,0], estimé 2,0 ≥ delta -> (a) sous surveillance.
+    result = _make_result(-3.0, -0.5, -2.0, 0.001)
+    interp = interpret(result, delta=1.0, favorable_direction=LOWER)
+    assert interp.case is InterpretationCase.A
+    assert "surveillance" in interp.recommendation
+
+
+def test_direction_accepts_text_and_rejects_unknown_values() -> None:
+    result = _make_result(-4.0, -1.5, -2.8, 0.0001)
+    assert interpret(result, delta=1.0, favorable_direction="lower_is_better").case is InterpretationCase.A
+    with pytest.raises(InvalidParameterError) as exc:
+        interpret(result, delta=1.0, favorable_direction="smaller")
+    assert exc.value.code == "INVALID_FAVORABLE_DIRECTION"

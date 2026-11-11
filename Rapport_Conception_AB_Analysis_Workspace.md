@@ -965,6 +965,8 @@ En positionnant l'IC par rapport à **0** et à **δ** (le seuil de pertinence p
 
 **Point crucial :** les cas (c) et (d) sont tous deux « non significatifs » mais appellent des recommandations **opposées**. C'est ce que la p-value seule ne permet jamais de distinguer, et c'est la justification concrète de l'exigence d'IC dans le contrat.
 
+**Sens favorable (ajouté à l'implémentation).** L'arbre ci-dessus suppose que « plus haut = mieux ». Ce n'est pas vrai pour toutes les métriques : pour un délai de paiement ou un taux de défaut, une différence B − A **négative** est une amélioration. Sans précaution, un délai réduit de 3 jours tomberait dans le cas (e) et produirait « ne pas déployer B ». L'analyste déclare donc le **sens favorable** de la métrique (`higher_is_better` ou `lower_is_better`). Quand plus bas = mieux, l'arbre est appliqué au **gain** A − B, c'est-à-dire à l'IC retourné. L'estimé et l'IC du résultat restent exprimés en B − A : seule la lecture change, et ce choix est enregistré dans `Interpretation.favorable_direction`.
+
 ---
 
 ## 16. Ordre d'implémentation recommandé

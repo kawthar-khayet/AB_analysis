@@ -60,6 +60,7 @@ from ab_stats.results import (
     EffectSizeName,
     Estimate,
     EstimateName,
+    FavorableDirection,
     GroupSummary,
     Groups,
     Hypotheses,
@@ -138,6 +139,7 @@ __all__ = [
     "AssumptionStatus",
     "Severity",
     "InterpretationCase",
+    "FavorableDirection",
     # Exceptions
     "ABStatsError",
     "DataValidationError",

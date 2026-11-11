@@ -108,6 +108,8 @@ def generate_pdf_report(request: PdfExportRequest) -> bytes:
         elements.append(Paragraph("2. Interprétation et Recommandation Métier", h2_style))
         delta_str = f"δ = {interp.delta}" if interp.delta is not None else "Non spécifié"
         elements.append(Paragraph(f"<b>Arbre de décision : Cas ({interp.case.upper()})</b> — Seuil économique : {delta_str}", body_style))
+        direction_str = "plus bas = mieux" if interp.favorable_direction == "lower_is_better" else "plus haut = mieux"
+        elements.append(Paragraph(f"<b>Sens favorable de la métrique :</b> {direction_str}", body_style))
         elements.append(Spacer(1, 4))
         elements.append(Paragraph(f"<b>Significativité :</b> {interp.significance_statement}", body_style))
         elements.append(Paragraph(f"<b>Pertinence pratique :</b> {interp.practical_statement}", body_style))
@@ -175,7 +177,7 @@ RESULT_CSV_COLUMNS = (
     "ci_level", "ci_lower", "ci_upper", "ci_method",
     "p_value", "p_value_source", "decision",
     "effect_size_name", "effect_size_value", "effect_size_label", "relative_lift",
-    "interpretation_case", "delta", "recommendation",
+    "interpretation_case", "delta", "favorable_direction", "recommendation",
     "warnings", "seed", "n_resamples", "input_hash", "contract_version",
 )
 
@@ -225,6 +227,7 @@ def flatten_result(analysis: AnalysisResponse) -> dict[str, object]:
         "relative_lift": r.relative_lift,
         "interpretation_case": interp.case if interp else None,
         "delta": interp.delta if interp else None,
+        "favorable_direction": interp.favorable_direction if interp else None,
         "recommendation": interp.recommendation if interp else None,
         "warnings": "|".join(w.code for w in r.warnings),
         "seed": r.reproducibility.get("seed"),

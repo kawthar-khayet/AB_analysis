@@ -124,6 +124,7 @@ export const api = {
     alternative?: string;
     confidence_level?: number;
     delta?: number | null;
+    favorable_direction?: "higher_is_better" | "lower_is_better";
     unit?: string;
     seed?: number;
     n_resamples?: number;

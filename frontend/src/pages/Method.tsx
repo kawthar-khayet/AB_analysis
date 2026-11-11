@@ -3,7 +3,7 @@ import { api } from "../api/endpoints";
 import { MissingPrerequisite } from "../components/MissingPrerequisite";
 import { WarningList } from "../components/WarningList";
 import { useWorkspace } from "../state/workspaceState";
-import { Alternative, Method, MethodCompatibility } from "../types/results";
+import { Alternative, FavorableDirection, Method, MethodCompatibility } from "../types/results";
 
 export const MethodPage: React.FC = () => {
   const {
@@ -17,6 +17,8 @@ export const MethodPage: React.FC = () => {
     setAlternative,
     delta,
     setDelta,
+    favorableDirection,
+    setFavorableDirection,
     seed,
     setSeed,
     setAnalysisOutcome,
@@ -80,6 +82,7 @@ export const MethodPage: React.FC = () => {
         alpha,
         alternative,
         delta,
+        favorable_direction: favorableDirection,
         unit: dataset.unit,
         seed,
       });
@@ -249,6 +252,25 @@ export const MethodPage: React.FC = () => {
             />
             <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
               Alimente l'arbre d'interprétation pratique sans modifier le calcul.
+            </span>
+          </div>
+
+          {/* Sens favorable de la métrique */}
+          <div>
+            <label htmlFor="favorable-direction" style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>
+              Sens favorable de la métrique :
+            </label>
+            <select
+              id="favorable-direction"
+              value={favorableDirection}
+              onChange={(e) => setFavorableDirection(e.target.value as FavorableDirection)}
+              style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", marginTop: "4px" }}
+            >
+              <option value="higher_is_better">Plus haut = mieux (taux, revenu, conversion)</option>
+              <option value="lower_is_better">Plus bas = mieux (délai, coût, taux de défaut)</option>
+            </select>
+            <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+              L'estimé reste B − A ; seule la lecture de l'arbre d'interprétation change.
             </span>
           </div>
 

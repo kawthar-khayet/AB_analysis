@@ -212,6 +212,10 @@ class AnalysisRequest(BaseModel):
     alternative: Literal["two_sided", "greater", "less"] = "two_sided"
     confidence_level: float | None = None
     delta: float | None = None
+    favorable_direction: Literal["higher_is_better", "lower_is_better"] = Field(
+        default="higher_is_better",
+        description="Sens dans lequel la métrique s'améliore (ex. lower_is_better pour un délai).",
+    )
     unit: str = "proportion"
     seed: int = 42
     n_resamples: int = 10_000
@@ -259,6 +263,7 @@ class InterpretationSchema(BaseModel):
     recommendation: str
     delta: float | None = None
     caveats: list[str]
+    favorable_direction: str = "higher_is_better"
 
 
 class AnalysisResponse(BaseModel):

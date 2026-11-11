@@ -51,4 +51,4 @@ StatisticalResult:
 * **`Assumption`** : `code`, `description`, `status` (`satisfied`, `violated`, `unverifiable`), `detail`.
 * **`AnalysisWarning`** : `code`, `severity` (`info`, `warning`, `critical`), `message`, `suggested_alternative`.
 * **`Reproducibility`** : `computed_at`, `input_hash`, `library_versions`, `seed`, `n_resamples`.
-* **`Interpretation`** : `case` (`"a"`, `"b"`, `"c"`, `"d"`, `"e"`), `significance_statement`, `practical_statement`, `recommendation`, `delta`, `caveats`.
+* **`Interpretation`** : `case` (`"a"`, `"b"`, `"c"`, `"d"`, `"e"`), `significance_statement`, `practical_statement`, `recommendation`, `delta`, `caveats`, `favorable_direction` (`higher_is_better` par défaut, ou `lower_is_better` pour une métrique comme un délai : l'arbre lit alors le gain comme A − B, l'estimé restant B − A).

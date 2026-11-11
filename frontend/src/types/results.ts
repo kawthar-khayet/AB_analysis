@@ -7,6 +7,8 @@ export type Method =
   | "bootstrap";
 
 export type Alternative = "two_sided" | "greater" | "less";
+/** Sens dans lequel la métrique s'améliore. L'estimé reste toujours B − A. */
+export type FavorableDirection = "higher_is_better" | "lower_is_better";
 export type Decision = "reject_null" | "fail_to_reject_null" | "not_applicable";
 export type InterpretationCase = "a" | "b" | "c" | "d" | "e";
 
@@ -104,6 +106,7 @@ export interface Interpretation {
   recommendation: string;
   delta?: number | null;
   caveats: string[];
+  favorable_direction?: FavorableDirection;
 }
 
 export interface AnalysisOutcome {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { DiagnosticsData, NormalizedDataset } from "../types/dataset";
-import { Alternative, AnalysisOutcome, Method } from "../types/results";
+import { Alternative, AnalysisOutcome, FavorableDirection, Method } from "../types/results";
 
 export type StepId = "dataset" | "diagnostics" | "method" | "results" | "export";
 
@@ -26,6 +26,9 @@ export interface WorkspaceState {
   delta: number | null;
   setDelta: (delta: number | null) => void;
 
+  favorableDirection: FavorableDirection;
+  setFavorableDirection: (direction: FavorableDirection) => void;
+
   seed: number;
   setSeed: (seed: number) => void;
 
@@ -49,6 +52,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [alpha, setAlpha] = useState<number>(0.05);
   const [alternative, setAlternative] = useState<Alternative>("two_sided");
   const [delta, setDelta] = useState<number | null>(null);
+  const [favorableDirection, setFavorableDirection] = useState<FavorableDirection>("higher_is_better");
   const [seed, setSeed] = useState<number>(42);
   const [analysisOutcome, setAnalysisOutcome] = useState<AnalysisOutcome | null>(null);
 
@@ -65,6 +69,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         if (parsed.alpha !== undefined) setAlpha(parsed.alpha);
         if (parsed.alternative) setAlternative(parsed.alternative);
         if (parsed.delta !== undefined) setDelta(parsed.delta);
+        if (parsed.favorableDirection) setFavorableDirection(parsed.favorableDirection);
         if (parsed.seed !== undefined) setSeed(parsed.seed);
         if (parsed.analysisOutcome) setAnalysisOutcome(parsed.analysisOutcome);
       }
@@ -84,6 +89,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         alpha,
         alternative,
         delta,
+        favorableDirection,
         seed,
         analysisOutcome,
       };
@@ -99,6 +105,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     alpha,
     alternative,
     delta,
+    favorableDirection,
     seed,
     analysisOutcome,
   ]);
@@ -109,6 +116,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
     setDiagnostics(null);
     setSelectedMethod(null);
     setDelta(null);
+    setFavorableDirection("higher_is_better");
     setAnalysisOutcome(null);
     setCurrentStep("dataset");
   };
@@ -130,6 +138,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({
         setAlternative,
         delta,
         setDelta,
+        favorableDirection,
+        setFavorableDirection,
         seed,
         setSeed,
         analysisOutcome,

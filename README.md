@@ -36,6 +36,8 @@ L'interprétation confronte l'intervalle de confiance au seuil d'importance éco
 
 *Règle d'or : aucune phrase n'affirme une égalité stricte entre variantes.*
 
+**Sens favorable.** L'arbre raisonne sur le *gain* apporté par B. Pour une métrique où « plus haut = mieux » (taux de recouvrement, conversion), le gain est B − A. Pour une métrique où « plus bas = mieux » (délai de paiement, taux de défaut), l'analyste le déclare à l'étape Méthode (`favorable_direction = lower_is_better`) et le gain devient A − B. Un délai B − A de −2,8 jours est alors lu comme une amélioration (cas a ou b), et non comme une dégradation (cas e). L'estimé et l'IC affichés restent toujours en B − A.
+
 ---
 
 ## 📊 Jeu de données d'exemple
@@ -43,7 +45,7 @@ L'interprétation confronte l'intervalle de confiance au seuil d'importance éco
 [`data/relances_paiement/`](data/relances_paiement/description.md) contient 2 400 factures impayées simulées (graine fixe), réparties au hasard entre une relance par e-mail (`control`) et une relance e-mail + appel (`treatment`). Le fichier se prête à deux analyses :
 
 * `recovered` (binaire) → `two_proportion_z` / `fisher_exact` : **non concluant** (+2,5 pts, IC contenant 0), alors que la simulation contient un vrai écart de +5 pts. C'est un cas d'école de puissance insuffisante.
-* `days_to_payment` (continue) → `welch_t` / `bootstrap` : **−2,8 jours**, significatif. Les 860 valeurs vides (factures non recouvrées) sont exclues et tracées.
+* `days_to_payment` (continue, **plus bas = mieux**) → `welch_t` / `bootstrap` : **−2,8 jours**, significatif. Les 860 valeurs vides (factures non recouvrées) sont exclues et tracées.
 
 Des fichiers plus petits se trouvent dans [`examples/`](examples/).
 
@@ -94,14 +96,14 @@ docker compose up --build
 Les tests vérifient l'immuabilité du contrat et comparent les calculs aux références SciPy et Statsmodels. Ils incluent des simulations de Monte-Carlo (tests A/A sous $H_0$) :
 
 ```bash
-# Paquet statistique (257 tests)
+# Paquet statistique (266 tests)
 pytest packages/ab_stats
 
-# API FastAPI, workflow complet sur le jeu d'exemple (20 tests)
+# API FastAPI, workflow complet sur le jeu d'exemple (22 tests)
 PYTHONPATH="packages;backend" pytest backend/tests     # Windows
 PYTHONPATH="packages:backend" pytest backend/tests     # Linux / macOS
 
-# Frontend : tests Vitest (18 tests) puis vérification TypeScript + build
+# Frontend : tests Vitest (22 tests) puis vérification TypeScript + build
 cd frontend && npm test && npm run build
 ```
 

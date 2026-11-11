@@ -105,3 +105,35 @@ def test_result_can_be_exported_as_csv(rows) -> None:
     assert record["method"] == "welch_t"
     assert record["unit"] == "jours"
     assert int(record["n_a"]) + int(record["n_b"]) == 2400 - 860
+
+
+def test_faster_payment_is_read_as_an_improvement_with_lower_is_better(rows) -> None:
+    dataset = _import(rows, "days_to_payment", metric_type="continuous", unit="jours")
+
+    naive = _analyse(dataset, "welch_t", delta=1.0, unit="jours")["interpretation"]
+    assert naive["case"] == "e"  # lecture par défaut : plus haut = mieux
+    assert naive["favorable_direction"] == "higher_is_better"
+
+    outcome = _analyse(dataset, "welch_t", delta=1.0, unit="jours", favorable_direction="lower_is_better")
+    interp = outcome["interpretation"]
+    assert interp["case"] == "a"
+    assert interp["recommendation"].startswith("Déployer la variante B")
+    assert interp["favorable_direction"] == "lower_is_better"
+    # L'estimé reste exprimé en B − A : seul le sens de lecture change.
+    assert outcome["result"]["estimate"]["value"] < 0
+
+    header, row = list(csv.reader(client.post("/api/v1/exports/csv", json=outcome).content.decode("utf-8-sig").splitlines()))
+    assert dict(zip(header, row))["favorable_direction"] == "lower_is_better"
+
+    pdf = client.post("/api/v1/exports/pdf", json={"analysis": outcome})
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF"
+
+
+def test_unknown_favorable_direction_is_rejected(rows) -> None:
+    dataset = _import(rows, "days_to_payment", metric_type="continuous", unit="jours")
+    res = client.post(
+        "/api/v1/analyses",
+        json={"method": "welch_t", "group_a": dataset["group_a"], "group_b": dataset["group_b"],
+              "favorable_direction": "smaller_is_better"},
+    )
+    assert res.status_code == 422

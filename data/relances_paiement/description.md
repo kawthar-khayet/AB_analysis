@@ -33,7 +33,7 @@ Question métier : *l'appel téléphonique améliore-t-il le recouvrement ?*
 | Métrique | Mapping à l'import | Méthodes compatibles |
 | --- | --- | --- |
 | `recovered` | binaire, succès = `yes`, échec = `no` | `two_proportion_z`, `fisher_exact` |
-| `days_to_payment` | continue, unité `jours` | `welch_t`, `bootstrap` |
+| `days_to_payment` | continue, unité `jours`, **sens favorable : plus bas = mieux** | `welch_t`, `bootstrap` |
 
 Pour `days_to_payment`, l'import écarte **860 lignes vides** (motif `MISSING_METRIC`) et lève l'alerte
 `HIGH_EXCLUSION_RATE`. C'est voulu : les exclusions sont tracées, jamais silencieuses.
@@ -60,6 +60,8 @@ Résultats attendus dans l'application (α = 5 %) :
   (+5 pts) existe pourtant. Avec 1 200 factures par groupe, la puissance est trop faible pour le détecter
   de façon fiable. Ne pas rejeter H0 ne prouve pas que les deux procédures se valent.
 * **Délai de paiement :** −2,8 j, IC 95 % ≈ [−4,0 ; −1,5], p < 0,001, donc **significatif** (Welch et bootstrap concordent).
+  Choisir « plus bas = mieux » à l'étape Méthode : avec δ = 1 jour, l'interprétation donne le cas (a), « Déployer la variante B ».
+  Avec le sens par défaut (plus haut = mieux), le même résultat serait lu à tort comme une dégradation (cas e).
 
 ## Limite à connaître
 

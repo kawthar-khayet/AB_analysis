@@ -1,14 +1,15 @@
 import React from "react";
-import { StatisticalResult } from "../types/results";
+import { FavorableDirection, StatisticalResult } from "../types/results";
 import { ConfidenceIntervalPlot } from "./ConfidenceIntervalPlot";
 import { WarningList } from "./WarningList";
 
 interface Props {
   result: StatisticalResult;
   delta?: number | null;
+  favorableDirection?: FavorableDirection;
 }
 
-export const ResultCard: React.FC<Props> = ({ result, delta }) => {
+export const ResultCard: React.FC<Props> = ({ result, delta, favorableDirection }) => {
   const isSig = result.decision === "reject_null";
 
   const formatPValue = (p?: number | null) => {
@@ -135,6 +136,7 @@ export const ResultCard: React.FC<Props> = ({ result, delta }) => {
         confidenceInterval={result.confidence_interval}
         estimate={result.estimate.value}
         delta={delta}
+        favorableDirection={favorableDirection}
         unit={result.estimate.unit}
       />
 

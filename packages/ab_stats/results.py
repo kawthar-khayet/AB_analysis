@@ -44,6 +44,7 @@ __all__ = [
     "AssumptionStatus",
     "Severity",
     "InterpretationCase",
+    "FavorableDirection",
     "Hypotheses",
     "GroupSummary",
     "Groups",
@@ -207,7 +208,10 @@ class InterpretationCase(str, Enum):
     * ``B`` — exclut 0 mais reste sous delta : significatif, trop petit pour compter.
     * ``C`` — contient 0 et tient dans ±delta : non concluant, gros effet exclu.
     * ``D`` — contient 0 et dépasse delta : non concluant, étude trop imprécise.
-    * ``E`` — entièrement sous 0 : effet négatif, B dégrade la métrique.
+    * ``E`` — entièrement du côté défavorable : effet négatif, B dégrade la métrique.
+
+    Les positions s'entendent sur le **gain** apporté par B (voir
+    :class:`FavorableDirection`), pas sur le signe brut de B − A.
 
     Les cas ``C`` et ``D`` sont tous deux « non significatifs » mais appellent
     des recommandations opposées. C'est la raison d'être de ce champ.
@@ -221,6 +225,18 @@ class InterpretationCase(str, Enum):
     C = "c"
     D = "d"
     E = "e"
+
+
+class FavorableDirection(str, Enum):
+    """Sens dans lequel une variation de la métrique est une amélioration.
+
+    L'estimé reste toujours B − A. Ce paramètre ne change que la **lecture** de
+    l'intervalle par l'arbre d'interprétation : pour un délai de paiement, une
+    différence B − A négative (B paie plus vite) est une amélioration.
+    """
+
+    HIGHER_IS_BETTER = "higher_is_better"
+    LOWER_IS_BETTER = "lower_is_better"
 
 
 # ---------------------------------------------------------------------------
@@ -641,8 +657,11 @@ class Interpretation:
     recommendation: str
     delta: float | None = None
     caveats: tuple[str, ...] = ()
+    favorable_direction: FavorableDirection = FavorableDirection.HIGHER_IS_BETTER
 
     def __post_init__(self) -> None:
+        if not isinstance(self.favorable_direction, FavorableDirection):
+            raise TypeError("`favorable_direction` doit être un FavorableDirection.")
         for name in ("significance_statement", "practical_statement", "recommendation"):
             if not getattr(self, name).strip():
                 raise ValueError(f"{name} ne peut pas être vide.")

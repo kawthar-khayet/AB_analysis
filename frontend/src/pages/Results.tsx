@@ -8,6 +8,7 @@ export const ResultsPage: React.FC = () => {
     analysisOutcome,
     delta,
     setDelta,
+    favorableDirection,
     setCurrentStep,
   } = useWorkspace();
 
@@ -23,21 +24,29 @@ export const ResultsPage: React.FC = () => {
   }
 
   const { result, interpretation } = analysisOutcome;
+  // Le sens retenu au moment de l'analyse fait foi ; à défaut, celui de la session.
+  const direction = interpretation?.favorable_direction ?? favorableDirection;
 
   // Calcul dynamique de l'interprétation côté client si delta varie sans relancer le calcul complet
+  // Même arbre que `ab_stats.interpretation` : on raisonne sur le gain apporté par B
+  // (B − A si plus haut = mieux, A − B si plus bas = mieux).
   const computeLocalCase = (d: number | null): "a" | "b" | "c" | "d" | "e" | null => {
     const ci = result.confidence_interval;
     if (ci.lower === null || ci.upper === null) return null;
-    if (ci.upper < 0) return "e";
+    const flip = direction === "lower_is_better";
+    const lower = flip ? -ci.upper : ci.lower;
+    const upper = flip ? -ci.lower : ci.upper;
+    const gain = flip ? -result.estimate.value : result.estimate.value;
+    if (upper < 0) return "e";
     if (d === null) return null;
-    const containsZero = ci.lower <= 0 && ci.upper >= 0;
+    const containsZero = lower <= 0 && upper >= 0;
     if (containsZero) {
-      if (ci.lower >= -d && ci.upper <= d) return "c";
+      if (lower >= -d && upper <= d) return "c";
       return "d";
     }
-    if (ci.lower >= d) return "a";
-    if (ci.upper <= d) return "b";
-    return result.estimate.value >= d ? "a" : "b";
+    if (lower >= d) return "a";
+    if (upper <= d) return "b";
+    return gain >= d ? "a" : "b";
   };
 
   const activeCase = computeLocalCase(delta);
@@ -108,7 +117,11 @@ export const ResultsPage: React.FC = () => {
       </div>
 
       {/* Résultat statistique complet */}
-      <ResultCard result={result} delta={delta} />
+      <ResultCard result={result} delta={delta} favorableDirection={direction} />
+      <div style={{ fontSize: "0.82rem", color: "#475569", marginTop: "8px" }}>
+        Sens favorable : <b>{direction === "lower_is_better" ? "plus bas = mieux" : "plus haut = mieux"}</b>
+        {direction === "lower_is_better" && " — une différence B − A négative est une amélioration."}
+      </div>
 
       {/* Ajustement interactif du seuil delta */}
       <div

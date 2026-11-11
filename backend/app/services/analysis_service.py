@@ -100,7 +100,7 @@ def run_analysis(request: AnalysisRequest) -> AnalysisResponse:
         raise InvalidParameterError("UNSUPPORTED_METHOD", f"Méthode non implémentée: {method}")
 
     # Interprétation déterministe
-    interp = interpret(res, delta=request.delta)
+    interp = interpret(res, delta=request.delta, favorable_direction=request.favorable_direction)
 
     result_dict = _to_json_compatible(res)
     interp_dict = _to_json_compatible(interp) if interp is not None else None
