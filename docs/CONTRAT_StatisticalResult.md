@@ -1,6 +1,6 @@
 # Contrat `StatisticalResult`
 
-Ce document formalise le contrat de données universel retourné par les 7 méthodes d'analyse d'A/B Analysis Workspace.
+Ce document formalise le contrat de données universel retourné par les 4 méthodes d'analyse d'A/B Analysis Workspace.
 
 ---
 
@@ -45,9 +45,9 @@ StatisticalResult:
 * **`Hypotheses`** : `alternative` (`two_sided`, `greater`, `less`), `null_text`, `alternative_text`.
 * **`GroupSummary`** : `n`, `successes`, `rate`, `mean`, `sd`, `median`.
 * **`Statistic`** : `name` (`"z"`, `"t"`, `"U"`, `"mean_diff"`, `"odds_ratio"`), `value`, `df`.
-* **`Estimate`** : `name` (`difference_of_proportions`, `difference_of_means`, `hodges_lehmann`), `value`, `unit`, `direction = "B_minus_A"`.
+* **`Estimate`** : `name` (`difference_of_proportions`, `difference_of_means`), `value`, `unit`, `direction = "B_minus_A"`.
 * **`ConfidenceInterval`** : `level`, `lower`, `upper`, `method`.
-* **`EffectSize`** : `name` (`cohens_h`, `cohens_d`, `hedges_g`, `cliffs_delta`), `value`, `convention`, `label`.
+* **`EffectSize`** : `name` (`cohens_h`, `cohens_d`, `hedges_g`), `value`, `convention`, `label`.
 * **`Assumption`** : `code`, `description`, `status` (`satisfied`, `violated`, `unverifiable`), `detail`.
 * **`AnalysisWarning`** : `code`, `severity` (`info`, `warning`, `critical`), `message`, `suggested_alternative`.
 * **`Reproducibility`** : `computed_at`, `input_hash`, `library_versions`, `seed`, `n_resamples`.

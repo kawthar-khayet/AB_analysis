@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import csv
-import io
 import json
 
 from fastapi import APIRouter, HTTPException, Response
 
-from app.schemas import AnalysisResponse, PdfExportRequest
-from app.services.export_service import generate_pdf_report
+from app.schemas import AnalysisResponse, DataCsvExportRequest, PdfExportRequest
+from app.services.export_service import (
+    generate_data_csv,
+    generate_pdf_report,
+    generate_result_csv,
+)
 
 router = APIRouter()
 
@@ -37,4 +39,24 @@ def export_json(request: AnalysisResponse) -> Response:
         content=content.encode("utf-8"),
         media_type="application/json",
         headers={"Content-Disposition": 'attachment; filename="resultat_ab_test.json"'},
+    )
+
+
+@router.post("/exports/csv")
+def export_result_csv(request: AnalysisResponse) -> Response:
+    """Télécharge le résultat aplati (une ligne par analyse) au format CSV."""
+    return Response(
+        content=generate_result_csv(request),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="resultat_ab_test.csv"'},
+    )
+
+
+@router.post("/exports/csv/data")
+def export_data_csv(request: DataCsvExportRequest) -> Response:
+    """Télécharge les observations analysées (après exclusions) au format CSV."""
+    return Response(
+        content=generate_data_csv(request),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="donnees_analysees.csv"'},
     )

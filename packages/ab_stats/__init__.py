@@ -3,9 +3,6 @@
 from ab_stats.analyses import (
     bootstrap_test,
     fisher_exact,
-    mann_whitney_u,
-    permutation_test,
-    student_t,
     two_proportion_z,
     welch_t,
 )
@@ -15,10 +12,8 @@ from ab_stats.compatibility import (
     get_compatible_methods,
 )
 from ab_stats.confidence_intervals import (
-    hodges_lehmann_ci,
     newcombe_proportion_ci,
     percentile_bootstrap_ci,
-    student_mean_ci,
     unpooled_proportion_ci,
     welch_mean_ci,
 )
@@ -35,11 +30,9 @@ from ab_stats.data import (
 )
 from ab_stats.diagnostics import Diagnostics, diagnose
 from ab_stats.effect_sizes import (
-    build_cliffs_delta,
     build_cohens_d,
     build_cohens_h,
     build_hedges_g,
-    cliffs_delta,
     cohens_d,
     cohens_h,
     hedges_g,
@@ -87,9 +80,6 @@ __all__ = [
     "two_proportion_z",
     "fisher_exact",
     "welch_t",
-    "student_t",
-    "mann_whitney_u",
-    "permutation_test",
     "bootstrap_test",
     # Compatibility & Interpretation
     "MethodCompatibility",
@@ -115,16 +105,12 @@ __all__ = [
     "cohens_h",
     "cohens_d",
     "hedges_g",
-    "cliffs_delta",
     "build_cohens_h",
     "build_cohens_d",
     "build_hedges_g",
-    "build_cliffs_delta",
     "unpooled_proportion_ci",
     "newcombe_proportion_ci",
     "welch_mean_ci",
-    "student_mean_ci",
-    "hodges_lehmann_ci",
     "percentile_bootstrap_ci",
     # Results contract
     "StatisticalResult",

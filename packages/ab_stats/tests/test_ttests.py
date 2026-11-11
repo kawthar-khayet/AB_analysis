@@ -1,4 +1,4 @@
-"""Tests des tests t de Welch et Student (étape 7)."""
+"""Tests du test t de Welch (étape 7)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from ab_stats.analyses.continuous import student_t, welch_t
+from ab_stats.analyses.continuous import welch_t
 from ab_stats.results import (
     Alternative,
     CIMethod,
@@ -35,24 +35,19 @@ def test_welch_t_against_scipy() -> None:
     assert res.decision == (Decision.REJECT_NULL if ref.pvalue <= 0.05 else Decision.FAIL_TO_REJECT_NULL)
 
 
-def test_student_t_against_scipy() -> None:
-    rng = np.random.default_rng(54321)
-    a = rng.normal(loc=50.0, scale=5.0, size=60)
-    b = rng.normal(loc=53.0, scale=5.0, size=60)
 
-    res = student_t(a, b, alpha=0.05, alternative=Alternative.GREATER)
-
-    ref = stats.ttest_ind(b, a, equal_var=True, alternative="greater")
-
-    assert res.method == Method.STUDENT_T
-    assert pytest.approx(res.statistic.value) == ref.statistic
-    assert pytest.approx(res.p_value) == ref.pvalue
-    assert res.confidence_interval.method == CIMethod.STUDENT_T_DIST
-    assert res.statistic.df == 118
+def test_welch_t_warns_on_skewed_data_and_suggests_bootstrap() -> None:
+    rng = np.random.default_rng(7)
+    a = rng.lognormal(3.0, 1.0, 200)
+    b = rng.lognormal(3.1, 1.0, 200)
+    res = welch_t(a, b)
+    skew = [w for w in res.warnings if w.code == "HIGH_SKEWNESS"]
+    assert skew and skew[0].suggested_alternative == Method.BOOTSTRAP
 
 
-def test_student_t_warning_on_unequal_variances() -> None:
-    a = [10.0, 10.1, 9.9, 10.0, 10.2]
-    b = [5.0, 15.0, 25.0, -5.0, 30.0]  # Variance beaucoup plus forte
-    res = student_t(a, b)
-    assert any(w.code == "UNEQUAL_VARIANCES" for w in res.warnings)
+def test_welch_t_df_is_between_min_group_and_pooled_df() -> None:
+    rng = np.random.default_rng(3)
+    a = rng.normal(0.0, 1.0, 40)
+    b = rng.normal(0.0, 5.0, 25)
+    res = welch_t(a, b)
+    assert 24 <= res.statistic.df <= 40 + 25 - 2

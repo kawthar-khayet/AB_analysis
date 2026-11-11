@@ -80,8 +80,6 @@ class MetricType(str, Enum):
     """Nature de la métrique analysée.
 
     Deux types seulement : le projet ne traite pas les métriques ordinales.
-    Mann-Whitney reste au catalogue, appliqué aux métriques continues à
-    distribution difficile (forte asymétrie, valeurs extrêmes).
     """
 
     BINARY = "binary"
@@ -89,14 +87,11 @@ class MetricType(str, Enum):
 
 
 class Method(str, Enum):
-    """Les sept méthodes du catalogue."""
+    """Les quatre méthodes du catalogue."""
 
     TWO_PROPORTION_Z = "two_proportion_z"
     FISHER_EXACT = "fisher_exact"
-    STUDENT_T = "student_t"
     WELCH_T = "welch_t"
-    MANN_WHITNEY_U = "mann_whitney_u"
-    PERMUTATION = "permutation"
     BOOTSTRAP = "bootstrap"
 
 
@@ -132,19 +127,15 @@ class PValueSource(str, Enum):
 
     ANALYTIC = "analytic"
     EXACT = "exact"
-    PERMUTATION = "permutation"
     BOOTSTRAP_SHIFTED = "bootstrap_shifted"
 
 
 class CIMethod(str, Enum):
     """Construction employée pour l'intervalle de confiance.
 
-    Ce champ règle deux zones grises du catalogue :
-
-    * Fisher exact ne produit pas nativement d'IC sur la différence de taux ;
-      il emprunte donc une construction déclarée (``NEWCOMBE``).
-    * Le test de permutation n'a pas d'IC natif ; s'il en expose un, il déclare
-      l'avoir emprunté au bootstrap (``PERCENTILE_BOOTSTRAP``).
+    Fisher exact ne produit pas nativement d'IC sur la différence de taux ;
+    il emprunte donc une construction déclarée (``NEWCOMBE``).
+    ``STUDENT_T_DIST`` sert à l'IC d'une moyenne seule dans les diagnostics.
     """
 
     NORMAL_APPROX_UNPOOLED = "normal_approx_unpooled"
@@ -152,21 +143,15 @@ class CIMethod(str, Enum):
     WALD = "wald"
     STUDENT_T_DIST = "student_t_dist"
     WELCH_T_DIST = "welch_t_dist"
-    HODGES_LEHMANN = "hodges_lehmann"
     PERCENTILE_BOOTSTRAP = "percentile_bootstrap"
     BCA_BOOTSTRAP = "bca_bootstrap"
 
 
 class EstimateName(str, Enum):
-    """Nature de l'estimé B − A.
-
-    Toutes les méthodes ne mesurent pas la même chose : Mann-Whitney ne compare
-    ni moyennes ni médianes, son estimé compagnon est celui de Hodges-Lehmann.
-    """
+    """Nature de l'estimé B − A."""
 
     DIFFERENCE_OF_PROPORTIONS = "difference_of_proportions"
     DIFFERENCE_OF_MEANS = "difference_of_means"
-    HODGES_LEHMANN = "hodges_lehmann"
 
 
 class EffectSizeName(str, Enum):
@@ -175,7 +160,6 @@ class EffectSizeName(str, Enum):
     COHENS_H = "cohens_h"
     COHENS_D = "cohens_d"
     HEDGES_G = "hedges_g"
-    CLIFFS_DELTA = "cliffs_delta"
 
 
 class EffectSizeLabel(str, Enum):
@@ -249,9 +233,9 @@ class Hypotheses:
     """Les hypothèses réellement testées par la méthode.
 
     Le texte est spécifique à chaque méthode et ne doit pas être générique :
-    Welch teste l'égalité des moyennes, Mann-Whitney une dominance stochastique,
-    la permutation l'égalité des distributions. L'export PDF doit afficher la
-    formulation du test réellement exécuté.
+    Welch et le bootstrap testent l'égalité des moyennes, Fisher l'indépendance
+    entre groupe et résultat. L'export PDF doit afficher la formulation du test
+    réellement exécuté.
     """
 
     alternative: Alternative
@@ -369,8 +353,8 @@ class ConfidenceInterval:
     construits contiendraient la vraie valeur.
 
     Un intervalle renseigné doit obligatoirement déclarer sa construction. C'est
-    ce qui permet à Fisher d'emprunter une construction (Newcombe) et à la
-    permutation d'emprunter l'IC du bootstrap, sans que ce soit silencieux.
+    ce qui permet à Fisher d'emprunter une construction (Newcombe) sans que ce
+    soit silencieux.
     """
 
     level: float
@@ -540,7 +524,7 @@ class Reproducibility:
 
 @dataclass(frozen=True, slots=True)
 class StatisticalResult:
-    """Résultat d'une analyse, identique en forme pour les sept méthodes.
+    """Résultat d'une analyse, identique en forme pour les quatre méthodes.
 
     L'objet est **auto-suffisant** : il porte les effectifs et les hypothèses
     testées, de sorte qu'un export PDF soit lisible sans accéder à

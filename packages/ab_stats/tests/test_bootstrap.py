@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from ab_stats.analyses.resampling import bootstrap_test
 from ab_stats.results import CIMethod, Decision, Method, PValueSource

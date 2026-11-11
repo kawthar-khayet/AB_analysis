@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import pytest
 
 from ab_stats.interpretation import interpret
 from ab_stats.results import (

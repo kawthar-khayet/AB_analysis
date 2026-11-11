@@ -7,7 +7,7 @@ Document de travail. Chaque étape est une unité de code autonome, terminée pa
 **Documents de référence :**
 - `../Rapport_Conception_AB_Analysis_Workspace.md` — architecture et fondements statistiques
 - `CONTRAT_StatisticalResult.md` — le contrat détaillé (à rédiger à l'étape 1)
-- `CATALOGUE_METHODES.md` — les 7 méthodes et leurs hypothèses (à rédiger à l'étape 12)
+- `CATALOGUE_METHODES.md` — les 4 méthodes et leurs hypothèses (à rédiger à l'étape 12)
 
 ---
 
@@ -24,14 +24,12 @@ Document de travail. Chaque étape est une unité de code autonome, terminée pa
 | `exceptions.py` | Erreurs structurées : code stable, catégorie, message, détails sérialisables. |
 | `simulation.py` | Génération déterministe de données A/B (binaires et continues) à partir d'une graine. |
 | `diagnostics.py` | Effectifs, valeurs manquantes, statistiques descriptives, asymétrie, valeurs extrêmes. |
-| `effect_sizes.py` | `cohens_d`, `hedges_g`, `cohens_h`, `cliffs_delta`. |
-| `confidence_intervals.py` | Constructions d'IC réutilisables (normal, percentile bootstrap, Hodges–Lehmann). |
+| `effect_sizes.py` | `cohens_d`, `hedges_g`, `cohens_h`. |
+| `confidence_intervals.py` | Constructions d'IC réutilisables (normal, Newcombe, Welch, percentile bootstrap). |
 | `compatibility.py` | Moteur de compatibilité : quelles méthodes sont applicables, avec quels avertissements. |
 | `interpretation.py` | Arbre de décision déterministe (cas a → e) produisant l'objet `Interpretation`. |
 | `methods/proportions.py` | `two_proportion_z`, `fisher_exact`. |
-| `methods/ttests.py` | `student_t`, `welch_t`. |
-| `methods/mann_whitney.py` | `mann_whitney_u` + estimateur de Hodges–Lehmann. |
-| `methods/permutation.py` | Test de permutation sur la différence des moyennes. |
+| `methods/ttests.py` | `welch_t`. |
 | `methods/bootstrap.py` | Bootstrap de la différence. |
 
 ### `backend/app/` — la frontière typée
@@ -91,7 +89,7 @@ Les dataclasses `frozen=True` : `StatisticalResult`, `Hypotheses`, `GroupSummary
 
 **⚠️ Prérequis — trois décisions à trancher avant d'écrire ce fichier :**
 1. IC de Fisher exact : `null` + warning, ou calcul par une autre approche déclarée ?
-2. IC de la permutation et p-value du bootstrap : `null`, ou complément explicite déclaré dans `method` / `p_value_source` ?
+2. P-value du bootstrap : `null`, ou complément explicite déclaré dans `method` / `p_value_source` ?
 3. `effect_size.label` : le stocker avec sa `convention` obligatoire, ou le laisser au frontend ?
 
 **Fait quand :** on peut construire un `StatisticalResult` à la main en Python, il est immuable, et `tests/test_results.py` vérifie qu'une tentative de modification échoue.
@@ -144,11 +142,11 @@ La fonction `two_proportion_z(...)` retourne un `StatisticalResult` complet : hy
 
 **C'est l'étape charnière du projet.** Le premier résultat complet.
 
-## Étape 7 — `methods/ttests.py` : Welch puis Student
+## Étape 7 — `methods/ttests.py` : Welch
 
 **Fichier :** `packages/ab_stats/methods/ttests.py` · **Test :** `tests/test_ttests.py`
 
-Welch d'abord (le défaut recommandé), Student ensuite (trivial une fois Welch écrit). **Aucun pré-test de variance ne doit choisir automatiquement entre les deux.**
+Welch uniquement : il ne suppose pas l'égalité des variances et reste quasi optimal quand elles sont égales. Student a été retiré du catalogue (voir étape 18).
 
 **Fait quand :** les résultats coïncident avec `scipy.stats.ttest_ind(..., equal_var=False)` et `equal_var=True`.
 
@@ -254,13 +252,11 @@ La liste des méthodes compatibles avec leurs hypothèses et warnings, le choix 
 
 # Phase 4 — Complétion
 
-## Étape 18 — Les cinq méthodes restantes
+## Étape 18 — Les méthodes restantes ✅
 
-Dans cet ordre, une étape par méthode : `fisher_exact` → `mann_whitney_u` → `permutation` → `bootstrap` → `student_t`.
+`fisher_exact` puis `bootstrap`. Fisher met le contrat à l'épreuve sur l'IC (construction empruntée, déclarée `newcombe`), le bootstrap sur la graine et la p-value déclarée (`bootstrap_shifted`).
 
-**Pourquoi cet ordre :** chacune met le contrat à l'épreuve sur un point différent — Fisher sur l'IC, Mann-Whitney sur l'estimé non standard, permutation et bootstrap sur la graine et les champs `null`.
-
-**Fait quand :** aucune modification du contrat n'a été nécessaire pour les accueillir. Si le contrat doit changer, c'est un signal — on en discute avant.
+**Décision de périmètre :** le catalogue est réduit à **4 méthodes** (deux par type de métrique). `student_t`, `mann_whitney_u` et `permutation` ont été retirés du code, des tests, de l'API et de l'interface. Welch couvre le cas de Student. Le bootstrap prend le rôle d'alternative robuste en cas d'asymétrie forte ou de valeurs extrêmes.
 
 ## Étape 19 — Export
 
@@ -286,6 +282,6 @@ JSON, CSV, et rapport PDF contenant : les hypothèses réellement testées, les 
 | 1 — Noyau statistique | 1 → 10 | Résultats corrects et vérifiés contre SciPy, sans serveur |
 | 2 — API | 11 → 13 | Endpoints typés et testés indépendamment |
 | 3 — Workspace | 14 → 17 | Workflow complet démontrable avec 2 méthodes |
-| 4 — Complétion | 18 → 20 | 7 méthodes, exports, Docker |
+| 4 — Complétion | 18 → 20 | 4 méthodes, exports PDF/JSON/CSV, Docker, CI |
 
 **Prochaine action :** trancher les trois décisions de l'étape 1, puis écrire `results.py`.

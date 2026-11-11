@@ -1,0 +1,2 @@
+# Les CSV d'exemple restent en LF partout : le contrôle de reproductibilité en CI compare les octets.
+*.csv text eol=lf

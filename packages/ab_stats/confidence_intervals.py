@@ -7,7 +7,6 @@ La méthode employée est explicitement déclarée dans chaque :class:`Confidenc
 from __future__ import annotations
 
 import math
-from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -20,8 +19,6 @@ __all__ = [
     "unpooled_proportion_ci",
     "newcombe_proportion_ci",
     "welch_mean_ci",
-    "student_mean_ci",
-    "hodges_lehmann_ci",
     "percentile_bootstrap_ci",
 ]
 
@@ -132,76 +129,6 @@ def welch_mean_ci(
         lower=diff - t_crit * se,
         upper=diff + t_crit * se,
         method=CIMethod.WELCH_T_DIST,
-    )
-
-
-def student_mean_ci(
-    mean_a: float,
-    sd_a: float,
-    n_a: int,
-    mean_b: float,
-    sd_b: float,
-    n_b: int,
-    *,
-    confidence_level: float = 0.95,
-) -> ConfidenceInterval:
-    """Intervalle t de Student (variances égales supposées) pour la différence de moyennes B - A."""
-    validate_confidence_level(confidence_level)
-    diff = mean_b - mean_a
-    df = n_a + n_b - 2
-    if df <= 0:
-        raise InvalidParameterError(
-            "INSUFFICIENT_SAMPLE_SIZE",
-            "Au moins 3 observations au total sont requises.",
-        )
-
-    pooled_variance = ((n_a - 1) * (sd_a**2) + (n_b - 1) * (sd_b**2)) / df
-    se = math.sqrt(pooled_variance * (1.0 / n_a + 1.0 / n_b))
-
-    alpha = 1.0 - confidence_level
-    t_crit = float(stats.t.ppf(1.0 - alpha / 2.0, df=df))
-
-    return ConfidenceInterval(
-        level=confidence_level,
-        lower=diff - t_crit * se,
-        upper=diff + t_crit * se,
-        method=CIMethod.STUDENT_T_DIST,
-    )
-
-
-def hodges_lehmann_ci(
-    group_a: Any,
-    group_b: Any,
-    *,
-    confidence_level: float = 0.95,
-) -> ConfidenceInterval:
-    """Intervalle de confiance non-paramétrique pour l'estimateur de Hodges-Lehmann (B - A)."""
-    validate_confidence_level(confidence_level)
-    arr_a = np.asarray(group_a, dtype=float)
-    arr_b = np.asarray(group_b, dtype=float)
-    n_a = arr_a.size
-    n_b = arr_b.size
-
-    # Différences deux à deux b_j - a_i
-    diffs = np.sort((arr_b[:, np.newaxis] - arr_a[np.newaxis, :]).ravel())
-    total_pairs = diffs.size
-
-    # Approximation normale du rang critique pour le test de Wilcoxon-Mann-Whitney
-    mean_rank = (n_a * n_b) / 2.0
-    sd_rank = math.sqrt((n_a * n_b * (n_a + n_b + 1.0)) / 12.0)
-    alpha = 1.0 - confidence_level
-    z = float(stats.norm.ppf(1.0 - alpha / 2.0))
-
-    k = int(math.floor(mean_rank - z * sd_rank))
-    # Bornes dans [0, total_pairs - 1]
-    lower_idx = max(0, min(k, total_pairs - 1))
-    upper_idx = max(0, min(total_pairs - 1 - k, total_pairs - 1))
-
-    return ConfidenceInterval(
-        level=confidence_level,
-        lower=float(diffs[lower_idx]),
-        upper=float(diffs[upper_idx]),
-        method=CIMethod.HODGES_LEHMANN,
     )
 
 

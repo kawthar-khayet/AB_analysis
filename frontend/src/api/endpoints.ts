@@ -151,4 +151,24 @@ export const api = {
       body: JSON.stringify(analysis),
     });
   },
+
+  exportResultCsv: async (analysis: AnalysisOutcome): Promise<Blob> => {
+    return request<Blob>("/exports/csv", {
+      method: "POST",
+      body: JSON.stringify(analysis),
+    });
+  },
+
+  exportDataCsv: async (payload: {
+    group_a: number[];
+    group_b: number[];
+    label_a?: string;
+    label_b?: string;
+    metric_name?: string;
+  }): Promise<Blob> => {
+    return request<Blob>("/exports/csv/data", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };

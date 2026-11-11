@@ -5,12 +5,11 @@ from __future__ import annotations
 import math
 import numpy as np
 import pytest
+from scipy import stats
 
 from ab_stats.confidence_intervals import (
-    hodges_lehmann_ci,
     newcombe_proportion_ci,
     percentile_bootstrap_ci,
-    student_mean_ci,
     unpooled_proportion_ci,
     welch_mean_ci,
 )
@@ -35,25 +34,14 @@ def test_newcombe_proportion_ci() -> None:
     assert ci.lower > 0.0  # exclut 0
 
 
-def test_welch_and_student_mean_ci() -> None:
-    # Cas symétrique
+def test_welch_mean_ci() -> None:
+    # Cas symétrique : avec variances et n égaux, df de Welch = n_A + n_B - 2
     ci_welch = welch_mean_ci(mean_a=10.0, sd_a=2.0, n_a=50, mean_b=12.0, sd_b=2.0, n_b=50, confidence_level=0.95)
-    ci_student = student_mean_ci(mean_a=10.0, sd_a=2.0, n_a=50, mean_b=12.0, sd_b=2.0, n_b=50, confidence_level=0.95)
+    half_width = stats.t.ppf(0.975, df=98) * math.sqrt(4.0 / 50 + 4.0 / 50)
 
     assert ci_welch.method == CIMethod.WELCH_T_DIST
-    assert ci_student.method == CIMethod.STUDENT_T_DIST
-    # Avec variances et n égaux, Welch et Student sont quasi identiques
-    assert pytest.approx(ci_welch.lower, rel=1e-2) == ci_student.lower
-    assert pytest.approx(ci_welch.upper, rel=1e-2) == ci_student.upper
-    assert ci_welch.lower < 2.0 < ci_welch.upper
-
-
-def test_hodges_lehmann_ci() -> None:
-    a = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    b = np.array([3.0, 4.0, 5.0, 6.0, 7.0])
-    ci = hodges_lehmann_ci(a, b, confidence_level=0.95)
-    assert ci.method == CIMethod.HODGES_LEHMANN
-    assert ci.lower <= 2.0 <= ci.upper
+    assert pytest.approx(ci_welch.lower) == 2.0 - half_width
+    assert pytest.approx(ci_welch.upper) == 2.0 + half_width
 
 
 def test_percentile_bootstrap_ci() -> None:

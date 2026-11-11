@@ -4,9 +4,6 @@ export type Method =
   | "two_proportion_z"
   | "fisher_exact"
   | "welch_t"
-  | "student_t"
-  | "mann_whitney_u"
-  | "permutation"
   | "bootstrap";
 
 export type Alternative = "two_sided" | "greater" | "less";

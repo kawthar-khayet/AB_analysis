@@ -9,17 +9,10 @@ import numpy as np
 
 from ab_stats import (
     Alternative,
-    AnalysisOutcome,
-    Interpretation,
     Method,
-    MetricType,
-    StatisticalResult,
     bootstrap_test,
     fisher_exact,
     interpret,
-    mann_whitney_u,
-    permutation_test,
-    student_t,
     two_proportion_z,
     welch_t,
 )
@@ -91,37 +84,6 @@ def run_analysis(request: AnalysisRequest) -> AnalysisResponse:
             confidence_level=request.confidence_level,
             unit=request.unit,
             seed=request.seed,
-        )
-    elif method is Method.STUDENT_T:
-        res = student_t(
-            group_a,
-            group_b,
-            alpha=request.alpha,
-            alternative=alt,
-            confidence_level=request.confidence_level,
-            unit=request.unit,
-            seed=request.seed,
-        )
-    elif method is Method.MANN_WHITNEY_U:
-        res = mann_whitney_u(
-            group_a,
-            group_b,
-            alpha=request.alpha,
-            alternative=alt,
-            confidence_level=request.confidence_level,
-            unit=request.unit,
-            seed=request.seed,
-        )
-    elif method is Method.PERMUTATION:
-        res = permutation_test(
-            group_a,
-            group_b,
-            alpha=request.alpha,
-            alternative=alt,
-            confidence_level=request.confidence_level,
-            n_resamples=request.n_resamples,
-            seed=request.seed,
-            unit=request.unit,
         )
     elif method is Method.BOOTSTRAP:
         res = bootstrap_test(

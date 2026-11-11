@@ -1,7 +1,7 @@
 """Moteur de compatibilité des méthodes statistiques.
 
 Ce module examine la nature de la métrique et les diagnostics pour évaluer,
-pour chacune des 7 méthodes du catalogue :
+pour chacune des 4 méthodes du catalogue :
 1. Sa compatibilité (booléen + motif en cas d'incompatibilité).
 2. Les hypothèses de validité requises.
 3. Les avertissements pertinents (avertissements machine-readable).
@@ -11,7 +11,6 @@ pour chacune des 7 méthodes du catalogue :
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from ab_stats.diagnostics import Diagnostics
 from ab_stats.results import (
@@ -43,7 +42,7 @@ class MethodCompatibility:
 
 
 def evaluate_compatibility(diagnostics: Diagnostics) -> dict[Method, MethodCompatibility]:
-    """Évalue l'adéquation des 7 méthodes à partir du diagnostic du jeu de données."""
+    """Évalue l'adéquation des 4 méthodes à partir du diagnostic du jeu de données."""
     metric_type = diagnostics.metric_type
     results: dict[Method, MethodCompatibility] = {}
 
@@ -54,7 +53,6 @@ def evaluate_compatibility(diagnostics: Diagnostics) -> dict[Method, MethodCompa
     has_small_sample = "SMALL_SAMPLE" in diag_warning_codes
     has_skewness = "HIGH_SKEWNESS" in diag_warning_codes
     has_outliers = "OUTLIERS_DETECTED" in diag_warning_codes
-    has_unequal_vars = "UNEQUAL_VARIANCES" in diag_warning_codes
     has_zero_var = "ZERO_VARIANCE" in diag_warning_codes
     has_unbalanced = "UNBALANCED_GROUPS" in diag_warning_codes
 
@@ -102,7 +100,7 @@ def evaluate_compatibility(diagnostics: Diagnostics) -> dict[Method, MethodCompa
         )
 
         # Méthodes continues incompatibles
-        for m in (Method.WELCH_T, Method.STUDENT_T, Method.MANN_WHITNEY_U, Method.PERMUTATION, Method.BOOTSTRAP):
+        for m in (Method.WELCH_T, Method.BOOTSTRAP):
             results[m] = MethodCompatibility(
                 method=m,
                 compatible=False,
@@ -147,58 +145,8 @@ def evaluate_compatibility(diagnostics: Diagnostics) -> dict[Method, MethodCompa
             is_recommended=(not has_skewness and not has_outliers and not has_zero_var),
         )
 
-        # STUDENT_T (déconseillé si variances inégales)
-        student_warnings = list(continuous_common_warnings)
-        student_homo_status = AssumptionStatus.SATISFIED
-        if has_unequal_vars:
-            student_homo_status = AssumptionStatus.VIOLATED
-            student_warnings.append(
-                AnalysisWarning(
-                    code="UNEQUAL_VARIANCES",
-                    severity=Severity.WARNING,
-                    message="Variances hétérogènes entre groupes. Préférez le test de Welch.",
-                    suggested_alternative=Method.WELCH_T,
-                )
-            )
-
-        results[Method.STUDENT_T] = MethodCompatibility(
-            method=Method.STUDENT_T,
-            compatible=not has_zero_var,
-            reason="Variance nulle dans les données." if has_zero_var else None,
-            assumptions=(
-                Assumption(code="INDEPENDENCE", description="Observations indépendantes.", status=AssumptionStatus.UNVERIFIABLE),
-                Assumption(code="NORMALITY", description="Normalité de la distribution.", status=AssumptionStatus.SATISFIED if not has_skewness else AssumptionStatus.VIOLATED),
-                Assumption(code="HOMOSCEDASTICITY", description="Égalité des variances.", status=student_homo_status),
-            ),
-            warnings=tuple(student_warnings),
-            is_recommended=False,  # Welch est toujours le défaut
-        )
-
-        # MANN_WHITNEY_U (recommandé si skewness ou outliers)
-        results[Method.MANN_WHITNEY_U] = MethodCompatibility(
-            method=Method.MANN_WHITNEY_U,
-            compatible=True,
-            assumptions=(
-                Assumption(code="INDEPENDENCE", description="Observations indépendantes.", status=AssumptionStatus.UNVERIFIABLE),
-                Assumption(code="ORDINAL_SCALE", description="Métrique au moins ordinale.", status=AssumptionStatus.SATISFIED),
-            ),
-            warnings=(),
-            is_recommended=(has_skewness or has_outliers),
-        )
-
-        # PERMUTATION
-        results[Method.PERMUTATION] = MethodCompatibility(
-            method=Method.PERMUTATION,
-            compatible=True,
-            assumptions=(
-                Assumption(code="EXCHANGEABILITY", description="Échangeabilité des observations sous H0.", status=AssumptionStatus.SATISFIED),
-                Assumption(code="INDEPENDENCE", description="Observations indépendantes.", status=AssumptionStatus.UNVERIFIABLE),
-            ),
-            warnings=(),
-            is_recommended=False,
-        )
-
-        # BOOTSTRAP
+        # BOOTSTRAP (recommandé si forte asymétrie ou valeurs extrêmes :
+        # aucune hypothèse de normalité de la distribution)
         boot_warnings = [diag_warning_codes["SMALL_SAMPLE"]] if has_small_sample else []
         results[Method.BOOTSTRAP] = MethodCompatibility(
             method=Method.BOOTSTRAP,
@@ -208,7 +156,7 @@ def evaluate_compatibility(diagnostics: Diagnostics) -> dict[Method, MethodCompa
                 Assumption(code="INDEPENDENCE", description="Observations indépendantes.", status=AssumptionStatus.UNVERIFIABLE),
             ),
             warnings=tuple(boot_warnings),
-            is_recommended=False,
+            is_recommended=(has_skewness or has_outliers) and not has_zero_var,
         )
 
     return results

@@ -1,4 +1,4 @@
-"""Briques partagées par les sept méthodes d'analyse.
+"""Briques partagées par les quatre méthodes d'analyse.
 
 Ce module ne calcule aucune statistique. Il regroupe ce que chaque méthode
 ferait sinon à sa façon :
@@ -48,7 +48,7 @@ __all__ = [
 ]
 
 
-#: Bornes du nombre de rééchantillonnages (permutation, bootstrap). En dessous
+#: Bornes du nombre de rééchantillonnages (bootstrap). En dessous
 #: de 100, la p-value empirique est trop grossière ; au-delà de 100 000, le
 #: temps de calcul devient déraisonnable pour une application interactive.
 MIN_RESAMPLES = 100

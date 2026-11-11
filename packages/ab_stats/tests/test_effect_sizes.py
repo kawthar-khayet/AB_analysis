@@ -2,20 +2,15 @@
 
 from __future__ import annotations
 
-import math
-import numpy as np
 import pytest
 
 from ab_stats.effect_sizes import (
-    build_cliffs_delta,
     build_cohens_d,
     build_cohens_h,
     build_hedges_g,
-    cliffs_delta,
     cohens_d,
     cohens_h,
     hedges_g,
-    label_cliffs_delta,
     label_cohens_d,
     label_cohens_h,
 )
@@ -51,20 +46,6 @@ def test_cohens_d_and_hedges_g() -> None:
     assert 0.99 < g < 1.0
 
 
-def test_cliffs_delta() -> None:
-    # Groupe B strictement supérieur à A
-    a = [1, 2, 3]
-    b = [4, 5, 6]
-    delta = cliffs_delta(a, b)
-    assert delta == 1.0
-    assert label_cliffs_delta(delta) == EffectSizeLabel.LARGE
-
-    # Groupes identiques
-    delta_zero = cliffs_delta([1, 2, 3], [1, 2, 3])
-    assert delta_zero == 0.0
-    assert label_cliffs_delta(delta_zero) == EffectSizeLabel.NEGLIGIBLE
-
-
 def test_build_effect_sizes() -> None:
     res_h = build_cohens_h(0.10, 0.15)
     assert res_h.name == EffectSizeName.COHENS_H
@@ -75,6 +56,6 @@ def test_build_effect_sizes() -> None:
     assert res_d.name == EffectSizeName.COHENS_D
     assert res_d.convention == "cohen_1988"
 
-    res_delta = build_cliffs_delta([1, 2, 3], [2, 3, 4])
-    assert res_delta.name == EffectSizeName.CLIFFS_DELTA
-    assert res_delta.convention == "romano_2006"
+    res_g = build_hedges_g(10.0, 11.0, 1.0, 1.0, 10, 10)
+    assert res_g.name == EffectSizeName.HEDGES_G
+    assert abs(res_g.value) < abs(res_d.value * 1.0001)

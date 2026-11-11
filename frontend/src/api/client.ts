@@ -47,7 +47,11 @@ export async function request<T>(
     throw new ApiError(message, response.status, errorData);
   }
 
-  if (response.headers.get("content-type")?.includes("application/pdf")) {
+  // Les exports (PDF, JSON, CSV) sont des fichiers à télécharger : on renvoie un Blob,
+  // sinon `URL.createObjectURL` recevrait un objet JSON déjà décodé.
+  const contentType = response.headers.get("content-type") || "";
+  const isAttachment = (response.headers.get("content-disposition") || "").includes("attachment");
+  if (isAttachment || contentType.includes("application/pdf") || contentType.includes("text/csv")) {
     return (await response.blob()) as unknown as T;
   }
 

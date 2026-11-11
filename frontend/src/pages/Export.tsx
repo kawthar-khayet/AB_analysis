@@ -4,11 +4,10 @@ import { MissingPrerequisite } from "../components/MissingPrerequisite";
 import { useWorkspace } from "../state/workspaceState";
 
 export const ExportPage: React.FC = () => {
-  const { analysisOutcome } = useWorkspace();
+  const { analysisOutcome, dataset } = useWorkspace();
   const [experimentName, setExperimentName] = useState<string>("Expérimentation A/B");
   const [author, setAuthor] = useState<string>("Analyste de Données");
-  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
-  const [downloadingJson, setDownloadingJson] = useState<boolean>(false);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!analysisOutcome) {
@@ -22,48 +21,60 @@ export const ExportPage: React.FC = () => {
     );
   }
 
-  const handleDownloadPdf = async () => {
+  const method = analysisOutcome.result.method;
+
+  // Télécharge un Blob renvoyé par l'API sous le nom de fichier donné.
+  const download = async (kind: string, fetchBlob: () => Promise<Blob>, filename: string) => {
     try {
-      setDownloadingPdf(true);
+      setDownloading(kind);
       setError(null);
-      const blob = await api.exportPdf({
-        analysis: analysisOutcome,
-        experiment_name: experimentName,
-        author: author,
-      });
+      const blob = await fetchBlob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `rapport_ab_${analysisOutcome.result.method}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err.message || "Erreur de téléchargement du PDF");
+      setError(err.message || `Erreur de téléchargement (${kind})`);
     } finally {
-      setDownloadingPdf(false);
+      setDownloading(null);
     }
   };
 
-  const handleDownloadJson = async () => {
-    try {
-      setDownloadingJson(true);
-      setError(null);
-      const blob = await api.exportJson(analysisOutcome);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `resultat_ab_${analysisOutcome.result.method}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || "Erreur de téléchargement JSON");
-    } finally {
-      setDownloadingJson(false);
-    }
+  const handleDownloadPdf = () =>
+    download(
+      "pdf",
+      () => api.exportPdf({ analysis: analysisOutcome, experiment_name: experimentName, author }),
+      `rapport_ab_${method}.pdf`,
+    );
+  const handleDownloadJson = () =>
+    download("json", () => api.exportJson(analysisOutcome), `resultat_ab_${method}.json`);
+  const handleDownloadResultCsv = () =>
+    download("csv", () => api.exportResultCsv(analysisOutcome), `resultat_ab_${method}.csv`);
+  const handleDownloadDataCsv = () =>
+    dataset &&
+    download(
+      "data",
+      () =>
+        api.exportDataCsv({
+          group_a: dataset.group_a,
+          group_b: dataset.group_b,
+          metric_name: dataset.unit || "value",
+        }),
+      "donnees_analysees.csv",
+    );
+
+  const secondaryButton: React.CSSProperties = {
+    padding: "10px 20px",
+    backgroundColor: "#ffffff",
+    color: "#334155",
+    border: "1px solid #cbd5e1",
+    borderRadius: "8px",
+    fontWeight: 600,
+    cursor: "pointer",
   };
 
   const res = analysisOutcome.result;
@@ -75,7 +86,7 @@ export const ExportPage: React.FC = () => {
           5. Export & Reproductibilité
         </h1>
         <p style={{ color: "#64748b", marginTop: "6px", fontSize: "0.95rem" }}>
-          Exportez un rapport PDF autonome ou téléchargez le schéma JSON complet pour archivage.
+          Exportez un rapport PDF autonome, le schéma JSON complet, ou le résultat et les données au format CSV.
         </p>
       </div>
 
@@ -126,10 +137,10 @@ export const ExportPage: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <button
             onClick={handleDownloadPdf}
-            disabled={downloadingPdf}
+            disabled={downloading !== null}
             style={{
               padding: "10px 20px",
               backgroundColor: "#2563eb",
@@ -140,24 +151,22 @@ export const ExportPage: React.FC = () => {
               cursor: "pointer",
             }}
           >
-            {downloadingPdf ? "Génération du PDF..." : "📄 Télécharger le Rapport PDF"}
+            {downloading === "pdf" ? "Génération du PDF..." : "📄 Télécharger le Rapport PDF"}
           </button>
 
-          <button
-            onClick={handleDownloadJson}
-            disabled={downloadingJson}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#ffffff",
-              color: "#334155",
-              border: "1px solid #cbd5e1",
-              borderRadius: "8px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {downloadingJson ? "Export..." : "{ } Export JSON"}
+          <button onClick={handleDownloadJson} disabled={downloading !== null} style={secondaryButton}>
+            {downloading === "json" ? "Export..." : "{ } Export JSON"}
           </button>
+
+          <button onClick={handleDownloadResultCsv} disabled={downloading !== null} style={secondaryButton}>
+            {downloading === "csv" ? "Export..." : "📊 Résultat CSV"}
+          </button>
+
+          {dataset && (
+            <button onClick={handleDownloadDataCsv} disabled={downloading !== null} style={secondaryButton}>
+              {downloading === "data" ? "Export..." : "🗂️ Données CSV"}
+            </button>
+          )}
         </div>
       </div>
 

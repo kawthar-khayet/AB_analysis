@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
@@ -204,9 +204,6 @@ class AnalysisRequest(BaseModel):
         "two_proportion_z",
         "fisher_exact",
         "welch_t",
-        "student_t",
-        "mann_whitney_u",
-        "permutation",
         "bootstrap",
     ]
     group_a: list[float]
@@ -277,3 +274,17 @@ class PdfExportRequest(BaseModel):
     analysis: AnalysisResponse
     experiment_name: str = "A/B Test Experiment"
     author: str = "Analyste"
+
+
+# ---------------------------------------------------------------------------
+# Schémas Export CSV
+# ---------------------------------------------------------------------------
+
+class DataCsvExportRequest(BaseModel):
+    """Observations analysées, telles qu'envoyées à ``/analyses`` (après exclusions)."""
+
+    group_a: list[float]
+    group_b: list[float]
+    label_a: str = "A"
+    label_b: str = "B"
+    metric_name: str = "metric"

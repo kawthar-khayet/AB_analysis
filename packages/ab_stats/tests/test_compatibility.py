@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from ab_stats.compatibility import evaluate_compatibility, get_compatible_methods
 from ab_stats.data import (
@@ -34,10 +33,10 @@ def test_binary_compatibility() -> None:
     assert comp[Method.TWO_PROPORTION_Z].compatible
     assert comp[Method.FISHER_EXACT].compatible
 
-    # Les t-tests sont déclarés incompatibles
-    assert not comp[Method.STUDENT_T].compatible
+    # Les méthodes continues sont déclarées incompatibles
     assert not comp[Method.WELCH_T].compatible
-    assert not comp[Method.MANN_WHITNEY_U].compatible
+    assert not comp[Method.BOOTSTRAP].compatible
+    assert set(comp) == set(Method)
 
     # Méthodes compatibles : uniquement z et fisher
     compatible = get_compatible_methods(diagnostics)
@@ -65,7 +64,7 @@ def test_binary_low_counts_warning_and_recommendation() -> None:
     assert not comp[Method.TWO_PROPORTION_Z].is_recommended
 
 
-def test_continuous_skewed_recommends_mann_whitney() -> None:
+def test_continuous_skewed_recommends_bootstrap() -> None:
     rng = np.random.default_rng(42)
     # Données asymétriques
     a = list(rng.exponential(scale=1.0, size=100))
@@ -83,10 +82,11 @@ def test_continuous_skewed_recommends_mann_whitney() -> None:
     comp = evaluate_compatibility(diagnostics)
 
     assert comp[Method.WELCH_T].compatible
-    assert comp[Method.MANN_WHITNEY_U].compatible
+    assert comp[Method.BOOTSTRAP].compatible
     # Incompatible avec les méthodes binaires
     assert not comp[Method.TWO_PROPORTION_Z].compatible
     assert not comp[Method.FISHER_EXACT].compatible
 
-    # Mann-Whitney est recommandé en présence de forte asymétrie
-    assert comp[Method.MANN_WHITNEY_U].is_recommended
+    # Le bootstrap (sans hypothèse de normalité) est recommandé en présence de forte asymétrie
+    assert comp[Method.BOOTSTRAP].is_recommended
+    assert not comp[Method.WELCH_T].is_recommended

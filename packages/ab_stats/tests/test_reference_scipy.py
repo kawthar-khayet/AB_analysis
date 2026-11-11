@@ -8,15 +8,10 @@ from scipy import stats
 from statsmodels.stats.proportion import proportions_ztest
 
 from ab_stats.analyses import (
-    bootstrap_test,
     fisher_exact,
-    mann_whitney_u,
-    permutation_test,
-    student_t,
     two_proportion_z,
     welch_t,
 )
-from ab_stats.results import Alternative
 
 
 def test_reference_proportions_ztest() -> None:
@@ -48,7 +43,7 @@ def test_reference_scipy_fisher() -> None:
     assert pytest.approx(res.p_value, abs=1e-5) == ref.pvalue
 
 
-def test_reference_scipy_welch_and_student() -> None:
+def test_reference_scipy_welch() -> None:
     rng = np.random.default_rng(777)
     a = rng.normal(5.0, 1.2, 80)
     b = rng.normal(5.5, 1.8, 70)
@@ -57,22 +52,6 @@ def test_reference_scipy_welch_and_student() -> None:
     ref_w = stats.ttest_ind(b, a, equal_var=False)
     assert pytest.approx(res_w.statistic.value, abs=1e-5) == ref_w.statistic
     assert pytest.approx(res_w.p_value, abs=1e-5) == ref_w.pvalue
-
-    res_s = student_t(a, b)
-    ref_s = stats.ttest_ind(b, a, equal_var=True)
-    assert pytest.approx(res_s.statistic.value, abs=1e-5) == ref_s.statistic
-    assert pytest.approx(res_s.p_value, abs=1e-5) == ref_s.pvalue
-
-
-def test_reference_scipy_mann_whitney() -> None:
-    rng = np.random.default_rng(888)
-    a = rng.lognormal(0.0, 0.5, 60)
-    b = rng.lognormal(0.3, 0.5, 60)
-
-    res = mann_whitney_u(a, b)
-    ref = stats.mannwhitneyu(b, a, alternative="two-sided")
-    assert pytest.approx(res.statistic.value, abs=1e-5) == ref.statistic
-    assert pytest.approx(res.p_value, abs=1e-5) == ref.pvalue
 
 
 def test_monte_carlo_aa_null_rejection_rate() -> None:

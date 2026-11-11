@@ -1,8 +1,8 @@
 # Rapport de conception — A/B Analysis Workspace
 
 **Projet** : construire un workspace local et reproductible transformant un jeu de données A/B en analyse fréquentiste complète.
-**Date** : 1er septembre 2026
-**Statut** : phase de conception — architecture et fondements statistiques. Aucun code écrit à ce stade.
+**Date** : 1er septembre 2026 — mis à jour le 10 novembre 2026
+**Statut** : rédigé en phase de conception, puis mis à jour après l'implémentation. Le catalogue a été **réduit à 4 méthodes** (voir §12, « Décision de périmètre ») et l'arborescence (§7) reflète le dépôt réel.
 
 ---
 
@@ -138,9 +138,9 @@ Toutes les méthodes retournent **la même structure** : hypothèses, statistiqu
 
 Fisher exact, Welch et le bootstrap sont mathématiquement très différents. Mais s'ils retournent le même objet :
 
-- la page Results en React est écrite **une seule fois** et fonctionne pour les 7 méthodes ;
+- la page Results en React est écrite **une seule fois** et fonctionne pour les 4 méthodes ;
 - l'export PDF est écrit **une seule fois** ;
-- ajouter une 8ᵉ méthode plus tard ne casse rien en aval.
+- ajouter une 5ᵉ méthode plus tard ne casse rien en aval.
 
 ### Le prix à payer
 
@@ -148,7 +148,6 @@ Certains champs seront `null` selon la méthode :
 
 - **Fisher exact** n'a pas de « statistique de test » au sens classique, et ne produit pas naturellement un IC sur la *différence de taux* (il donne un IC sur l'*odds ratio*).
 - **Bootstrap** produit naturellement un IC, mais pas une p-value.
-- **Mann-Whitney** ne produit pas une différence de moyennes.
 
 Ce choix doit être **assumé et documenté explicitement**, pas caché.
 
@@ -277,22 +276,22 @@ La sidebar lit cet objet pour afficher ses ✓ / ● / ○ et l'en-tête `datase
 ## 7. Arborescence mise à jour
 
 ```
-ab-analysis-workspace/
+AB_analysis/
 ├── packages/
 │   └── ab_stats/
 │       ├── data.py                  # normalisation / validation
 │       ├── diagnostics.py           # résumés et diagnostics
 │       ├── results.py               # contrat StatisticalResult
-│       ├── methods/
-│       │   ├── proportions.py
-│       │   ├── ttests.py
-│       │   ├── mann_whitney.py
-│       │   ├── permutation.py
-│       │   └── bootstrap.py
+│       ├── analyses/
+│       │   ├── _common.py           # validations, graine, empreinte des données
+│       │   ├── binary.py            # two_proportion_z, fisher_exact
+│       │   ├── continuous.py        # welch_t
+│       │   └── resampling.py        # bootstrap
 │       ├── effect_sizes.py
 │       ├── confidence_intervals.py
 │       ├── compatibility.py         # AJOUT : moteur de compatibilité
 │       ├── interpretation.py
+│       ├── simulation.py
 │       └── tests/
 ├── backend/
 │   ├── app/
@@ -300,9 +299,9 @@ ab-analysis-workspace/
 │   │   ├── schemas.py
 │   │   ├── routes/
 │   │   │   ├── health.py
-│   │   │   ├── datasets.py
+│   │   │   ├── datasets.py          # aperçu, import, diagnostics, simulations
 │   │   │   ├── analyses.py
-│   │   │   └── exports.py
+│   │   │   └── exports.py           # PDF, JSON, CSV
 │   │   └── services/
 │   │       ├── analysis_service.py
 │   │       └── export_service.py
@@ -319,17 +318,20 @@ ab-analysis-workspace/
 │       │   ├── Results.tsx
 │       │   └── Export.tsx           # AJOUT : 5e page
 │       ├── state/
-│       │   └── workspaceState.ts    # AJOUT : état de session
+│       │   └── workspaceState.tsx   # AJOUT : état de session
 │       ├── components/
 │       ├── api/
-│       └── types/
+│       ├── types/
+│       └── tests/                   # AJOUT : tests Vitest
+├── data/relances_paiement/          # AJOUT : jeu d'exemple réaliste + générateur
 ├── examples/
 ├── docs/
+├── .github/workflows/               # AJOUT : CI backend, frontend, Docker
 ├── docker-compose.yml
 └── README.md
 ```
 
-Modifications par rapport au PDF initial : ajout de `compatibility.py`, `Export.tsx`, du dossier `layout/` et de `state/` ; renommage de `Data.tsx` → `Dataset.tsx` et `Analysis.tsx` → `Method.tsx` pour aligner les noms de fichiers sur les étapes de la sidebar.
+Modifications par rapport au PDF initial : ajout de `compatibility.py`, `Export.tsx`, du dossier `layout/` et de `state/` ; renommage de `Data.tsx` → `Dataset.tsx` et `Analysis.tsx` → `Method.tsx` pour aligner les noms de fichiers sur les étapes de la sidebar. À l'implémentation, le dossier `methods/` est devenu `analyses/`, regroupé par famille de métrique, et le catalogue est passé à 4 méthodes.
 
 ---
 
@@ -470,7 +472,7 @@ Par comparaison, p = 0,001 signifierait qu'il faudrait **1 000** répétitions p
 
 ### Le pont avec le code
 
-Cette expérience imaginaire est **réellement exécutée** par `permutation.py` : mélanger au hasard les étiquettes A et B des milliers de fois détruit toute vraie différence et fabrique un monde où H₀ est vraie. Le t-test et le z-test, eux, ne simulent rien : ils *calculent* cette distribution par une formule, plus rapide mais au prix d'hypothèses.
+Cette expérience imaginaire est **réellement exécutée** à deux endroits. Le test A/A de Monte-Carlo (`tests/test_reference_scipy.py`) simule des milliers d'expériences sans effet et vérifie que le test ne rejette H₀ qu'environ 5 % du temps. Le bootstrap, pour sa p-value, **recentre** les deux groupes sur la moyenne commune : il fabrique ainsi un monde où H₀ est vraie, puis rééchantillonne. Le t-test et le z-test, eux, ne simulent rien : ils *calculent* cette distribution par une formule, plus rapide mais au prix d'hypothèses.
 
 ### Les trois interprétations fausses
 
@@ -553,7 +555,7 @@ Si chaque méthode choisissait son sens, on obtiendrait tantôt +1,3 tantôt −
 - le module d'interprétation ne peut plus raisonner sur le signe, alors que c'est toute son utilité (`estimate > 0` doit **toujours** signifier « B fait mieux ») ;
 - l'analyste ne peut plus comparer deux méthodes entre elles.
 
-**Règle : A est la référence, B est la nouveauté, on soustrait toujours la référence.** Appliquée par les 7 méthodes, sans exception.
+**Règle : A est la référence, B est la nouveauté, on soustrait toujours la référence.** Appliquée par les 4 méthodes, sans exception.
 
 ### Le piège d'unité
 
@@ -568,9 +570,9 @@ différence relative :  (12,4 − 11,1) / 11,1     =  +11,7 %
 
 **Conséquence de conception :** le champ `estimate` doit porter **son unité explicitement** (`percentage_points`, `euros`, `seconds`…) et l'interface ne doit jamais écrire un `%` ambigu. L'estimé du contrat, celui qui sert aux calculs et à l'IC, reste **l'absolu** ; le lift relatif va dans un champ distinct.
 
-### Cas particulier
+### Conséquence du catalogue à 4 méthodes
 
-Pour **Mann-Whitney**, il n'y a pas de différence de moyennes à donner (voir §12). L'estimé retenu est celui de **Hodges–Lehmann**.
+Les 4 méthodes retenues produisent toutes un estimé « classique » : une **différence de taux** pour z et Fisher, une **différence de moyennes** pour Welch et le bootstrap. Aucune n'a besoin d'un estimé non standard. C'est l'une des raisons du retrait de Mann-Whitney (voir §12), dont l'estimé naturel (Hodges–Lehmann) n'est ni une moyenne ni une médiane.
 
 ---
 
@@ -682,7 +684,7 @@ Plus un test suppose, plus il est puissant — mais plus il devient faux si les 
    beaucoup d'hypothèses                        peu d'hypothèses
    puissant, fragile                            robuste, gourmand
    ├────────────────────────────────────────────────────────────┤
-   Student    Welch    z-test    Mann-Whitney   Permutation   Bootstrap
+   z-test         Welch          Fisher exact         Bootstrap
 ```
 
 Il n'existe pas de « meilleur test », seulement **le test dont les hypothèses sont crédibles pour ces données** — ce que l'étape Diagnostics sert à établir. D'où l'ordre imposé Diagnostics → Method.
@@ -697,10 +699,8 @@ Il n'existe pas de « meilleur test », seulement **le test dont les hypothèses
    0/1, oui/non                 €, secondes, nb de pages
    « a-t-il acheté ? »          « combien a-t-il dépensé ? »
         │                             │
-   z-test 2 proportions          Student / Welch
-   Fisher exact                  Mann-Whitney
-                                 Permutation
-                                 Bootstrap
+   z-test 2 proportions          Welch
+   Fisher exact                  Bootstrap
 ```
 
 Une donnée binaire ne peut pas être normale — elle ne prend que deux valeurs — et sa variance est **liée à sa moyenne** (`p(1−p)`). Les formules ne sont pas interchangeables.
@@ -725,84 +725,63 @@ Aucune approximation : énumère toutes les répartitions possibles des succès 
 - **Hypothèses** : quasiment aucune au-delà de l'indépendance.
 - **Quand** : petits échantillons, événements rares.
 - **Limites** : légèrement **conservateur** (p-values un peu trop grandes, donc conclut moins souvent) ; coûteux sur de très gros effectifs.
-- **Piège pour le contrat** : ne fournit pas naturellement un IC sur la **différence de taux** (il donne un IC sur l'*odds ratio*). Il faut soit calculer l'IC de la différence autrement en le documentant, soit laisser le champ `null` avec un warning explicite.
+- **Piège pour le contrat** : ne fournit pas naturellement un IC sur la **différence de taux** (il donne un IC sur l'*odds ratio*). Il faut soit calculer l'IC de la différence autrement en le documentant, soit laisser le champ `null` avec un warning explicite. **Décision retenue** : IC de Newcombe (score de Wilson combiné), déclaré `ci_method = newcombe`.
 
 > **Règle de compatibilité :** si un groupe a moins de 10 succès ou 10 échecs → warning sur le z-test, Fisher recommandé.
 
 ### Famille continue
-
-#### `student_t_test` — le classique, et le plus fragile
-
-- **Hypothèses** : normalité **et** variances égales.
-- **Problème** : l'égalité des variances n'a presque jamais de justification. Un nouveau design peut produire la même moyenne avec une dispersion différente.
-- **Recommandation** : le garder au catalogue pour la valeur pédagogique et la comparaison, mais **jamais comme choix par défaut**.
 
 #### `welch_t_test` — le bon défaut
 
 Même test, sans l'hypothèse d'égalité des variances (degrés de liberté ajustés).
 
 - **Hypothèses** : normalité, ou grands échantillons via le théorème central limite.
-- **Pourquoi c'est le défaut** : quand les variances sont égales, Welch ne perd presque rien face à Student ; quand elles ne le sont pas, il protège. Le rapport bénéfice/risque est asymétrique.
+- **Pourquoi c'est le défaut** : le test de Student classique suppose en plus des **variances égales**, ce qui n'a presque jamais de justification (un nouveau design peut garder la même moyenne avec une dispersion différente). Quand les variances sont égales, Welch ne perd presque rien face à Student ; quand elles ne le sont pas, il protège. Le rapport bénéfice/risque est asymétrique, d'où le retrait de Student du catalogue.
 
-> ⚠️ **Mauvaise pratique répandue, à ne pas coder** : faire d'abord un test d'égalité des variances (Levene, F-test) puis choisir Student ou Welch selon le résultat. Cette procédure en deux temps **fausse les taux d'erreur** du test final, car la décision dépend elle-même des données. La bonne approche : **choisir Welch d'avance**. C'est cohérent avec *« never silently choose a statistical test »* — l'application recommande, l'analyste décide, mais aucun pré-test automatique ne branche à sa place.
+> ⚠️ **Mauvaise pratique répandue, à ne pas coder** : faire d'abord un test d'égalité des variances (Levene, F-test) puis choisir Student ou Welch selon le résultat. Cette procédure en deux temps **fausse les taux d'erreur** du test final, car la décision dépend elle-même des données. La bonne approche : **choisir Welch d'avance**. C'est cohérent avec *« never silently choose a statistical test »* — l'application recommande, l'analyste décide, mais aucun pré-test automatique ne branche à sa place. C'est une raison de plus de ne garder que Welch.
 
-**Sur la normalité :** les t-tests y sont assez robustes dès que `n` est grand (quelques centaines). Ce qui les casse vraiment, c'est une **forte asymétrie combinée à un petit échantillon**, ou des **valeurs extrêmes** (un client à 12 000 € parmi des clients à 40 € fait exploser moyenne et variance). C'est le déclencheur du warning vers Mann-Whitney ou la permutation.
-
-#### `mann_whitney_u` — le test des rangs
-
-Jette les valeurs et ne garde que **l'ordre** : classe toutes les observations des deux groupes confondus et compare les rangs.
-
-- **Hypothèses** : indépendance, métrique au moins ordinale. Pas de normalité.
-- **Quand** : distributions très asymétriques, valeurs extrêmes, petits échantillons non normaux.
-- **⚠️ Subtilité majeure** : Mann-Whitney **ne compare ni les moyennes ni les médianes**. Il teste :
-
-  > « si je tire un utilisateur au hasard dans B et un dans A, la probabilité que celui de B ait la plus grande valeur diffère-t-elle de 50 % ? »
-
-  On ne peut le lire comme une comparaison de **médianes** qu'en ajoutant l'hypothèse que les deux distributions ont la **même forme** et ne diffèrent que par un décalage. Cette hypothèse doit figurer dans le champ `assumptions`.
-
-- **Estimé B−A retenu** : l'**estimateur de Hodges–Lehmann** — la médiane de toutes les différences par paires entre une valeur de B et une valeur de A. Il possède un IC associé, il est dans l'unité de la métrique et il respecte le sens B−A.
-
-#### `permutation_test` — la machine à p-values
-
-Exécute réellement l'expérience de pensée : mélange au hasard les étiquettes A et B des milliers de fois, recalcule l'écart des moyennes à chaque mélange, compte combien dépassent l'écart observé.
-
-- **Hypothèses** : l'**échangeabilité** sous H₀ — une observation aurait tout aussi bien pu tomber dans l'autre groupe. Pas de normalité, pas de forme imposée.
-- **Avantages** : conceptuellement transparent, c'est la définition même de la p-value.
-- **Coûts** : lent ; **exige une graine aléatoire** pour la reproductibilité.
-- **Nuance à documenter** : la permutation est *exacte* pour l'hypothèse « les deux groupes suivent la même distribution ». Pour l'hypothèse plus étroite « les deux moyennes sont égales » avec des variances différentes, elle n'est qu'approximative.
+**Sur la normalité :** les t-tests y sont assez robustes dès que `n` est grand (quelques centaines). Ce qui les casse vraiment, c'est une **forte asymétrie combinée à un petit échantillon**, ou des **valeurs extrêmes** (un client à 12 000 € parmi des clients à 40 € fait exploser moyenne et variance). C'est le déclencheur du warning (`HIGH_SKEWNESS`, `OUTLIERS_DETECTED`) qui suggère le bootstrap.
 
 #### `bootstrap_difference` — la machine à intervalles
 
-Principe inverse : on ne détruit pas l'effet, on **rééchantillonne chaque groupe avec remise** des milliers de fois pour mesurer l'instabilité de l'estimé B−A.
+Principe inverse du test A/A (§9) : on ne détruit pas l'effet, on **rééchantillonne chaque groupe avec remise** des milliers de fois pour mesurer l'instabilité de l'estimé B−A.
 
-- **Hypothèses** : peu, mais l'échantillon doit être assez grand pour être représentatif (peu fiable en dessous de ~30 par groupe).
-- **Produit naturellement** : un **IC** (percentiles 2,5 % et 97,5 % des rééchantillonnages). Pas de p-value native.
+- **Hypothèses** : peu (pas de normalité, pas de forme imposée), mais l'échantillon doit être assez grand pour être représentatif (peu fiable en dessous de ~30 par groupe).
+- **Quand** : distributions très asymétriques ou valeurs extrêmes, là où l'approximation normale de Welch devient douteuse.
+- **Produit naturellement** : un **IC** (percentiles 2,5 % et 97,5 % des rééchantillonnages). Pas de p-value native : elle est obtenue en recentrant les deux groupes sur la moyenne commune (monde où H₀ est vraie), et sa source est **déclarée** (`p_value_source = bootstrap_shifted`).
 - **Exige une graine.**
 
-#### Pourquoi les deux méthodes de rééchantillonnage
+### Décision de périmètre : 4 méthodes au lieu de 7
+
+La conception initiale prévoyait 7 méthodes. Trois ont été retirées à l'implémentation :
+
+| Retirée | Raison | Ce qui couvre le besoin |
+|---|---|---|
+| `student_t` | Suppose des variances égales, rarement justifiable ; Welch fait aussi bien quand elles le sont | `welch_t` |
+| `mann_whitney_u` | Ne compare ni moyennes ni médianes, estimé (Hodges–Lehmann) et taille d'effet (delta de Cliff) non standard : difficile à interpréter pour un décideur | `bootstrap` pour les données asymétriques |
+| `permutation` | Recoupe le bootstrap (méthode de rééchantillonnage sans hypothèse de normalité, avec graine) | `bootstrap`, qui fournit IC **et** p-value déclarée |
+
+Le résultat : **deux méthodes par type de métrique**, une méthode par défaut et une alternative quand ses hypothèses sont fragiles.
 
 ```
-   permutation  →  répond « est-ce du bruit ? »      (p-value native)
-   bootstrap    →  répond « de combien ? »           (IC natif)
+   binaire   :  z-test (défaut)   →  Fisher exact si événements rares
+   continue  :  Welch  (défaut)   →  bootstrap si forte asymétrie / valeurs extrêmes
 ```
 
-Ce ne sont pas deux versions du même outil, mais les deux moitiés de la page Results obtenues sans formule paramétrique.
+Chaque méthode conservée est justifiable de bout en bout, et le contrat `StatisticalResult` reste testé sur ses deux cas difficiles : l'IC emprunté de Fisher (Newcombe) et la p-value déclarée du bootstrap.
 
 ### Tableau récapitulatif
 
 | Méthode | Métrique | Hypothèses clés | À utiliser quand | `estimate` (B−A) |
 |---|---|---|---|---|
 | `two_proportion_z` | binaire | indépendance, ≥ ~10 succès **et** ~10 échecs par groupe | cas standard du web | différence de taux |
-| `fisher_exact` | binaire | indépendance | petits effectifs, événements rares | diff. de taux (IC à documenter) |
-| `student_t` | continue | normalité + **variances égales** | référence pédagogique | diff. de moyennes |
+| `fisher_exact` | binaire | indépendance | petits effectifs, événements rares | diff. de taux (IC de Newcombe) |
 | `welch_t` | continue | normalité (ou grand `n`) | **défaut recommandé** | diff. de moyennes |
-| `mann_whitney_u` | continue | indépendance ; même forme si lecture en médianes | asymétrie forte, valeurs extrêmes | Hodges–Lehmann |
-| `permutation` | continue | échangeabilité sous H₀ ; **graine** | peu d'hypothèses, p-value transparente | diff. de moyennes |
-| `bootstrap` | continue | échantillon représentatif, `n` pas trop petit ; **graine** | IC sans hypothèse de forme | diff. de moyennes |
+| `bootstrap` | continue | échantillon représentatif, `n` pas trop petit ; **graine** | asymétrie forte, valeurs extrêmes ; IC sans hypothèse de forme | diff. de moyennes |
 
 ### Le moteur de compatibilité
 
-Alimente `GET /api/v1/methods` et la page Method. Il prend le **type de métrique + les diagnostics** et renvoie, pour chaque méthode : `compatible` (oui/non), `assumptions`, `warnings`.
+Alimente `POST /api/v1/methods/compatibility` et la page Method. Il prend le **type de métrique + les diagnostics** et renvoie, pour chaque méthode : `compatible` (oui/non), `assumptions`, `warnings`.
 
 Trois niveaux à ne pas confondre :
 
@@ -899,16 +878,6 @@ Le `h` de Cohen corrige cela par une transformation arcsinus qui redresse l'éch
 
 C'est pourquoi le `d` ne s'applique pas au binaire, et pourquoi le catalogue doit associer **une mesure d'effet à chaque méthode**.
 
-### Mann-Whitney : le delta de Cliff
-
-Puisque Mann-Whitney raisonne sur des rangs, sa mesure d'effet naturelle aussi :
-
-```
-   δ = P(une valeur de B > une valeur de A) − P(une valeur de A > une valeur de B)
-```
-
-Varie de −1 (tout B en dessous) à +1 (tout B au-dessus), vaut 0 quand les groupes sont indiscernables. C'est **littéralement ce que Mann-Whitney teste**, exprimé comme une amplitude.
-
 ### L'avertissement le plus important
 
 Sur le scénario de référence avec n = 50 000 :
@@ -949,8 +918,7 @@ Le champ `label` est optionnel et ne doit jamais être présenté comme un jugem
 | Méthode | Mesure d'effet |
 |---|---|
 | `two_proportion_z`, `fisher_exact` | `cohens_h` |
-| `student_t`, `welch_t`, `permutation`, `bootstrap` | `cohens_d` (ou `hedges_g` si petit `n`) |
-| `mann_whitney_u` | `cliffs_delta` |
+| `welch_t`, `bootstrap` | `cohens_d` (ou `hedges_g` si petit `n`) |
 
 Le **lift relatif** (`+11,7 %`) peut être affiché à côté car c'est le langage des décideurs, mais ce n'est pas une taille d'effet standardisée : il va dans un champ distinct, jamais dans `effect_size`.
 
@@ -1018,13 +986,10 @@ En positionnant l'IC par rapport à **0** et à **δ** (le seuil de pertinence p
 1.  two_proportion_z    ← le plus simple, l'IC vient directement
 2.  welch_t             ← le bon défaut continu
 3.  fisher_exact        ← complète la famille binaire, valide le moteur de warnings
-4.  mann_whitney_u      ← force à traiter le cas « estimate non standard »
-5.  permutation         ← introduit la reproductibilité par graine
-6.  bootstrap           ← réutilise la mécanique de graine, produit l'IC
-7.  student_t           ← trivial une fois Welch fait
+4.  bootstrap           ← introduit la graine et la p-value déclarée
 ```
 
-Cet ordre n'est pas arbitraire : **chaque étape stresse le contrat `StatisticalResult` sur un point différent.** S'il survit à Fisher (IC problématique) et à Mann-Whitney (estimé non standard), il survivra à tout. C'est la raison de ne pas construire les 7 méthodes d'un coup.
+Cet ordre n'est pas arbitraire : **chaque étape stresse le contrat `StatisticalResult` sur un point différent.** S'il survit à Fisher (IC emprunté, déclaré `newcombe`) et au bootstrap (graine obligatoire, p-value déclarée `bootstrap_shifted`), il survivra à tout. C'est la raison de ne pas construire les 4 méthodes d'un coup.
 
 ---
 
@@ -1038,12 +1003,12 @@ Cet ordre n'est pas arbitraire : **chaque étape stresse le contrat `Statistical
 - Rendre les warnings **machine-readable**.
 - Ne jamais interpréter un résultat non significatif comme une preuve que A et B sont égaux.
 - Rapporter la significativité statistique **séparément** de l'importance pratique.
-- Utiliser des graines fixes pour la permutation et le bootstrap.
+- Utiliser des graines fixes pour le bootstrap et les simulations.
 - Tester l'implémentation contre des références statistiques indépendantes (SciPy, Statsmodels).
 
 ### Questions encore ouvertes
 
-1. **IC de Fisher exact** : calculer l'IC de la différence de taux par une autre méthode documentée, ou laisser `null` avec warning ?
+1. ~~**IC de Fisher exact**~~ : **tranché**, IC de Newcombe déclaré (voir §12).
 2. **Champs `null` du contrat** : formaliser, méthode par méthode, quels champs peuvent être absents et pourquoi.
 3. **Test bilatéral / unilatéral** : exposé comme paramètre de la page Method — définir le défaut (bilatéral) et l'ergonomie de l'avertissement.
 4. **Seuil δ de pertinence pratique** : saisi par l'analyste sur quelle page — Method ou Results ?

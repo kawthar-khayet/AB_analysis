@@ -1,7 +1,8 @@
-"""Service de génération de rapports d'analyse au format PDF via ReportLab."""
+"""Services d'export : rapport PDF (ReportLab) et fichiers CSV."""
 
 from __future__ import annotations
 
+import csv
 import io
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -15,7 +16,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from app.schemas import AnalysisResponse, PdfExportRequest
+from app.schemas import AnalysisResponse, DataCsvExportRequest, PdfExportRequest
 
 
 def generate_pdf_report(request: PdfExportRequest) -> bytes:
@@ -158,3 +159,90 @@ def generate_pdf_report(request: PdfExportRequest) -> bytes:
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Export CSV
+# ---------------------------------------------------------------------------
+
+#: Colonnes du résumé CSV, dans l'ordre d'affichage. Une analyse = une ligne,
+#: ce qui permet de concaténer plusieurs expériences dans un même tableur.
+RESULT_CSV_COLUMNS = (
+    "method", "metric_type", "alternative", "alpha",
+    "n_a", "n_b", "rate_a", "rate_b", "mean_a", "mean_b", "sd_a", "sd_b",
+    "statistic_name", "statistic_value", "df",
+    "estimate_name", "estimate_b_minus_a", "unit",
+    "ci_level", "ci_lower", "ci_upper", "ci_method",
+    "p_value", "p_value_source", "decision",
+    "effect_size_name", "effect_size_value", "effect_size_label", "relative_lift",
+    "interpretation_case", "delta", "recommendation",
+    "warnings", "seed", "n_resamples", "input_hash", "contract_version",
+)
+
+
+def _csv_bytes(rows: list[list[object]]) -> bytes:
+    """Encode en UTF-8 avec BOM pour que les accents s'affichent dans Excel."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerows([["" if v is None else v for v in row] for row in rows])
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def flatten_result(analysis: AnalysisResponse) -> dict[str, object]:
+    """Aplatit un ``AnalysisResponse`` en un dictionnaire colonne -> valeur."""
+    r = analysis.result
+    a, b = r.groups.get("a", {}), r.groups.get("b", {})
+    interp = analysis.interpretation
+    return {
+        "method": r.method,
+        "metric_type": r.metric_type,
+        "alternative": r.hypotheses.get("alternative"),
+        "alpha": r.alpha,
+        "n_a": a.get("n"),
+        "n_b": b.get("n"),
+        "rate_a": a.get("rate"),
+        "rate_b": b.get("rate"),
+        "mean_a": a.get("mean"),
+        "mean_b": b.get("mean"),
+        "sd_a": a.get("sd"),
+        "sd_b": b.get("sd"),
+        "statistic_name": r.statistic.get("name"),
+        "statistic_value": r.statistic.get("value"),
+        "df": r.statistic.get("df"),
+        "estimate_name": r.estimate.get("name"),
+        "estimate_b_minus_a": r.estimate.get("value"),
+        "unit": r.estimate.get("unit"),
+        "ci_level": r.confidence_interval.level,
+        "ci_lower": r.confidence_interval.lower,
+        "ci_upper": r.confidence_interval.upper,
+        "ci_method": r.confidence_interval.method,
+        "p_value": r.p_value,
+        "p_value_source": r.p_value_source,
+        "decision": r.decision,
+        "effect_size_name": r.effect_size.name,
+        "effect_size_value": r.effect_size.value,
+        "effect_size_label": r.effect_size.label,
+        "relative_lift": r.relative_lift,
+        "interpretation_case": interp.case if interp else None,
+        "delta": interp.delta if interp else None,
+        "recommendation": interp.recommendation if interp else None,
+        "warnings": "|".join(w.code for w in r.warnings),
+        "seed": r.reproducibility.get("seed"),
+        "n_resamples": r.reproducibility.get("n_resamples"),
+        "input_hash": r.reproducibility.get("input_hash"),
+        "contract_version": r.contract_version,
+    }
+
+
+def generate_result_csv(analysis: AnalysisResponse) -> bytes:
+    """CSV d'une ligne : en-tête + résultat aplati."""
+    flat = flatten_result(analysis)
+    return _csv_bytes([list(RESULT_CSV_COLUMNS), [flat[c] for c in RESULT_CSV_COLUMNS]])
+
+
+def generate_data_csv(request: DataCsvExportRequest) -> bytes:
+    """CSV long des observations analysées : une ligne par observation (groupe, valeur)."""
+    rows: list[list[object]] = [["group", request.metric_name]]
+    rows += [[request.label_a, v] for v in request.group_a]
+    rows += [[request.label_b, v] for v in request.group_b]
+    return _csv_bytes(rows)
